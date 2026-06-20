@@ -95,7 +95,7 @@
     </div>
     <div class="form-group"><label>รหัสพนักงาน <span class="req">*</span></label><input type="text" id="fEmpId" placeholder="เช่น EMP001" maxlength="20" inputmode="text" autocomplete="off"></div>
     <div class="form-group"><label>วันที่ขอกลับ <span class="req">*</span></label><input type="date" id="fDate"></div>
-    <div class="form-group"><label>เวลาที่ขอกลับ <span class="req">*</span></label><select id="fTime"><option value="">— เลือกเวลา —</option><option value="15:00">15:00 น.</option><option value="16:00">16:00 น.</option></select></div>
+    <div class="form-group"><label>เวลาที่ขอกลับ <span class="req">*</span></label><select id="fTime"><option value="">— เลือกเวลา —</option><option value="16:00">16:00 น. (ก่อน 1 ชม. · 1 สิทธิ)</option><option value="15:00">15:00 น. (ก่อน 2 ชม. · 2 สิทธิ)</option></select><div id="quotaInfo" style="font-size:12px;margin-top:7px;font-weight:600;color:#1A73E8;"></div></div>
     <div class="form-group"><label>เหตุผล <span class="req">*</span></label><textarea id="fReason" placeholder="ระบุเหตุผลการขอกลับก่อนเวลา เช่น นัดหมอ, ธุระครอบครัว..."></textarea></div>
     <button class="btn-submit" id="btnSubmit" onclick="submitForm()">📤 ส่งคำขอ</button>
   </div>
@@ -151,16 +151,40 @@ function updateBadge() {
   else badge.textContent = '—';
 }
 
+// โควต้า: 2 สิทธิ/เดือน — 16:00 = 1 สิทธิ, 15:00 = 2 สิทธิ
+const QUOTA_PER_MONTH = 2;
+let quotaRemaining = QUOTA_PER_MONTH;
+
 async function loadStats(userId) {
   try {
     const res = await fetch(SCRIPT_URL + '?action=stats&userId=' + encodeURIComponent(userId));
     const data = await res.json();
-    document.getElementById('s1h').textContent = data.oneHour ?? '0';
-    document.getElementById('s2h').textContent = data.twoHour ?? '0';
+    const oneH = Number(data.oneHour) || 0;   // 16:00
+    const twoH = Number(data.twoHour) || 0;   // 15:00
+    document.getElementById('s1h').textContent = oneH;
+    document.getElementById('s2h').textContent = twoH;
     document.getElementById('sTotal').textContent = data.total ?? '0';
+    const used = oneH * 1 + twoH * 2;
+    quotaRemaining = Math.max(0, QUOTA_PER_MONTH - used);
   } catch (_) {
     ['s1h','s2h','sTotal'].forEach(id => document.getElementById(id).textContent = '0');
+    quotaRemaining = QUOTA_PER_MONTH;
   }
+  applyQuota();
+}
+
+function applyQuota() {
+  const sel  = document.getElementById('fTime');
+  const o16  = sel.querySelector('option[value="16:00"]');
+  const o15  = sel.querySelector('option[value="15:00"]');
+  o16.disabled = quotaRemaining < 1;   // 16:00 ใช้ 1 สิทธิ
+  o15.disabled = quotaRemaining < 2;   // 15:00 ใช้ 2 สิทธิ
+  o16.textContent = '16:00 น. (ก่อน 1 ชม. · 1 สิทธิ)' + (o16.disabled ? ' — สิทธิไม่พอ' : '');
+  o15.textContent = '15:00 น. (ก่อน 2 ชม. · 2 สิทธิ)' + (o15.disabled ? ' — สิทธิไม่พอ' : '');
+  if ((sel.value === '15:00' && o15.disabled) || (sel.value === '16:00' && o16.disabled)) sel.value = '';
+  const q = document.getElementById('quotaInfo');
+  if (quotaRemaining <= 0) { q.textContent = '⚠️ ใช้สิทธิลากลับก่อนเวลาครบแล้วเดือนนี้'; q.style.color = '#E53935'; }
+  else { q.textContent = '🎫 สิทธิคงเหลือเดือนนี้: ' + quotaRemaining + ' สิทธิ'; q.style.color = '#1A73E8'; }
 }
 
 async function submitForm() {
@@ -171,6 +195,9 @@ async function submitForm() {
   const time = document.getElementById('fTime').value.trim();
   const reason = document.getElementById('fReason').value.trim();
   if (!branch || !dept || !empId || !date || !time || !reason) { alert('⚠️ กรุณากรอกข้อมูลให้ครบถ้วนทุกช่อง'); return; }
+  const cost = time === '15:00' ? 2 : (time === '16:00' ? 1 : 0);
+  if (cost === 0) { alert('⚠️ กรุณาเลือกเวลาที่ขอกลับ (15:00 หรือ 16:00)'); return; }
+  if (cost > quotaRemaining) { alert('⚠️ สิทธิลากลับก่อนเวลาไม่พอ\nคงเหลือ ' + quotaRemaining + ' สิทธิ — รายการนี้ใช้ ' + cost + ' สิทธิ\n(16:00 = 1 สิทธิ, 15:00 = 2 สิทธิ)'); return; }
   const [y, m, d] = date.split('-');
   const displayDate = d + '/' + m + '/' + y;
   const btn = document.getElementById('btnSubmit');
