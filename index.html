@@ -95,7 +95,7 @@
     </div>
     <div class="form-group"><label>รหัสพนักงาน <span class="req">*</span></label><input type="text" id="fEmpId" placeholder="เช่น EMP001" maxlength="20" inputmode="text" autocomplete="off"></div>
     <div class="form-group"><label>วันที่ขอกลับ <span class="req">*</span></label><input type="date" id="fDate"></div>
-    <div class="form-group"><label>เวลาที่ขอกลับ <span class="req">*</span></label><input type="time" id="fTime"></div>
+    <div class="form-group"><label>เวลาที่ขอกลับ <span class="req">*</span></label><select id="fTime"><option value="">— เลือกเวลา —</option><option value="15:00">15:00 น.</option><option value="16:00">16:00 น.</option></select></div>
     <div class="form-group"><label>เหตุผล <span class="req">*</span></label><textarea id="fReason" placeholder="ระบุเหตุผลการขอกลับก่อนเวลา เช่น นัดหมอ, ธุระครอบครัว..."></textarea></div>
     <button class="btn-submit" id="btnSubmit" onclick="submitForm()">📤 ส่งคำขอ</button>
   </div>
