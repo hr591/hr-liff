@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<script>
+(function(){ try{
+  var P='line-scdn.net';
+  var OF=window.fetch;
+  if(OF){ window.fetch=function(u,o){ try{ var s=(u&&u.url)?u.url:(''+u); if(s.indexOf(P)!==-1){ o=Object.assign({},o,{cache:'no-store'}); } }catch(e){} return OF.call(this,u,o); }; }
+  var XO=XMLHttpRequest.prototype.open;
+  XMLHttpRequest.prototype.open=function(m,url){ try{ if(typeof url==='string'&&url.indexOf(P)!==-1){ url+=(url.indexOf('\u003f')===-1?'\u003f':'&')+'_n='+Date.now(); arguments[1]=url; } }catch(e){} return XO.apply(this,arguments); };
+}catch(e){} })();
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>แจ้งละเลยการสแกนนิ้ว</title>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, 'Prompt', 'Noto Sans Thai', sans-serif; background: #EEF2F7; min-height: 100vh; color: #1A1A2E; }
+  .header { background: linear-gradient(135deg, #E67E22 0%, #CA6F1E 100%); color: #fff; padding: 22px 16px 18px; text-align: center; position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 12px rgba(230,126,34,0.3); }
+  .header h1 { font-size: 17px; font-weight: 700; }
+  .header sub { font-size: 11px; opacity: 0.82; display: block; margin-top: 3px; }
+  .card { background: #fff; border-radius: 14px; padding: 16px; margin: 14px 14px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.07); }
+  .user-card { display: flex; align-items: center; gap: 13px; }
+  .avatar { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2.5px solid #FDEBD0; background: #FDEBD0; }
+  .user-name { font-size: 15px; font-weight: 700; }
+  .user-badge { display: inline-block; font-size: 10px; background: #FEF9E7; color: #E67E22; border-radius: 20px; padding: 2px 8px; margin-top: 4px; font-weight: 600; }
+  .form-title { font-size: 13px; font-weight: 700; color: #444; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid #F0F0F0; }
+  .form-group { margin-bottom: 14px; }
+  .form-group label { display: block; font-size: 12px; font-weight: 600; color: #666; margin-bottom: 6px; }
+  .req { color: #E53935; margin-left: 2px; }
+  input, select, textarea { width: 100%; padding: 11px 13px; border: 1.5px solid #DDE3F0; border-radius: 9px; font-size: 14px; color: #1A1A2E; background: #FAFBFF; -webkit-appearance: none; transition: border-color .18s, box-shadow .18s; font-family: inherit; }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: #E67E22; box-shadow: 0 0 0 3px rgba(230,126,34,0.12); background: #fff; }
+  select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 13px center; padding-right: 36px; }
+  textarea { resize: none; height: 88px; line-height: 1.5; }
+  .check-group { display: flex; gap: 10px; }
+  .check-item { flex: 1; display: flex; align-items: center; gap: 8px; padding: 10px 12px; border: 1.5px solid #DDE3F0; border-radius: 9px; background: #FAFBFF; cursor: pointer; transition: border-color .18s, background .18s; font-size: 13px; font-weight: 600; color: #555; user-select: none; }
+  .check-item input[type="checkbox"] { width: 18px; height: 18px; accent-color: #E67E22; flex-shrink: 0; padding: 0; border: none; background: transparent; }
+  .check-item.checked { border-color: #E67E22; background: #FEF9E7; color: #CA6F1E; }
+  .btn-submit { width: 100%; padding: 14px; background: linear-gradient(135deg, #E67E22, #CA6F1E); color: #fff; border: none; border-radius: 11px; font-size: 15px; font-weight: 700; cursor: pointer; transition: opacity .2s, transform .1s; font-family: inherit; margin-top: 6px; }
+  .btn-submit:active { opacity: .85; transform: scale(.99); }
+  .btn-submit:disabled { background: #B0BEC5; cursor: not-allowed; }
+  #successScreen { display: none; text-align: center; padding: 50px 24px; margin: 14px; background: #fff; border-radius: 16px; box-shadow: 0 2px 10px rgba(0,0,0,.07); }
+  .success-icon { font-size: 56px; margin-bottom: 14px; }
+  .success-title { font-size: 19px; font-weight: 700; color: #E67E22; }
+  .success-desc { font-size: 13px; color: #888; margin-top: 10px; line-height: 1.7; }
+  #loadingScreen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; gap: 14px; color: #888; font-size: 14px; }
+  .spinner { width: 36px; height: 36px; border: 3px solid #FDEBD0; border-top-color: #E67E22; border-radius: 50%; animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spacer { height: 24px; }
+</style>
+</head>
+<body>
+<div id="loadingScreen"><div class="spinner"></div><span>กำลังโหลด...</span></div>
+<div id="mainApp" style="display:none;">
+  <div class="header"><h1>👆 แจ้งละเลยการสแกนนิ้ว</h1><sub>กรอกข้อมูลและรอการรับทราบจากหัวหน้า</sub></div>
+  <div class="card user-card">
+    <img id="userAvatar" class="avatar" src="" alt="avatar">
+    <div><div id="userName" class="user-name">—</div><div id="userBadge" class="user-badge">—</div></div>
+  </div>
+  <div id="formCard" class="card" style="margin-bottom:0;">
+    <div class="form-title">📝 ข้อมูลการแจ้งละเลยสแกนนิ้ว</div>
+    <div class="form-group">
+      <label>สาขา <span class="req">*</span></label>
+      <select id="fBranch" onchange="updateBadge()">
+        <option value="">— เลือกสาขา —</option>
+        <option value="สำนักงานใหญ่">สำนักงานใหญ่</option>
+        <option value="สาขาท่ามะกา">สาขาท่ามะกา</option>
+        <option value="สาขาพนมทวน">สาขาพนมทวน</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>แผนก <span class="req">*</span></label>
+      <select id="fDept" onchange="updateBadge()">
+        <option value="">— เลือกแผนก —</option>
+        <option value="ขาย">ขาย</option>
+        <option value="บริการ">บริการ</option>
+        <option value="ตัวถังและสี">ตัวถังและสี</option>
+        <option value="อาคารและสถานที่">อาคารและสถานที่</option>
+        <option value="ลูกค้าสัมพันธ์">ลูกค้าสัมพันธ์</option>
+        <option value="การเงิน">การเงิน</option>
+        <option value="บัญชี">บัญชี</option>
+        <option value="บุคคล">บุคคล</option>
+        <option value="เลขา">เลขา</option>
+        <option value="แม่บ้าน">แม่บ้าน</option>
+        <option value="การตลาดประชาสัมพันธ์">การตลาดประชาสัมพันธ์</option>
+        <option value="Digital Marketing">Digital Marketing</option>
+        <option value="VDQI">VDQI</option>
+      </select>
+    </div>
+    <div class="form-group"><label>รหัสพนักงาน <span class="req">*</span></label><input type="text" id="fEmpId" placeholder="เช่น EMP001" maxlength="20" inputmode="text" autocomplete="off"></div>
+    <div class="form-group"><label>วันที่ลืมสแกน <span class="req">*</span></label><input type="date" id="fDate"></div>
+    <div class="form-group">
+      <label>ลืมสแกนช่วงใด <span class="req">*</span> <small style="color:#aaa;font-weight:400;">(เลือกได้หลายช่วง)</small></label>
+      <div class="check-group">
+        <label class="check-item" id="lblMorning"><input type="checkbox" id="fMorning" onchange="toggleCheck('lblMorning','fMorning')">🌅 เช้า</label>
+        <label class="check-item" id="lblEvening"><input type="checkbox" id="fEvening" onchange="toggleCheck('lblEvening','fEvening')">🌆 เย็น</label>
+      </div>
+    </div>
+    <div class="form-group"><label>เหตุผล <span class="req">*</span></label><textarea id="fReason" placeholder="ระบุเหตุผลที่ไม่ได้สแกนนิ้ว เช่น ลืม, เครื่องขัดข้อง, มาสาย..."></textarea></div>
+    <button class="btn-submit" id="btnSubmit" onclick="submitForm()">📤 ส่งการแจ้ง</button>
+  </div>
+  <div id="successScreen">
+    <div class="success-icon">✅</div>
+    <div class="success-title">ส่งการแจ้งสำเร็จ!</div>
+    <div class="success-desc">การแจ้งของคุณถูกส่งไปยังหัวหน้างานแล้ว<br>คุณจะได้รับแจ้งผลการรับทราบผ่าน LINE<br><br><small style="color:#bbb;">หน้าต่างจะปิดโดยอัตโนมัติ...</small></div>
+  </div>
+  <div class="spacer"></div>
+</div>
+<script>
+const LIFF_ID       = '2010425124-QmJtietu';
+const SCRIPT_URL   = 'https://script.google.com/macros/s/AKfycbyUmPxiU96nNIC06qeki8Nqu7rv2Fk3zM_UzYVGpkL9EshQzIzVSjza0q74koSkUtHxzg/exec';
+let profile = null;
+
+async function initApp() {
+  const _origFetch = window.fetch;
+  window.fetch = function(url, opts) {
+    if (url && url.toString().startsWith('https://liffsdk.line-scdn.net/xlt/') && url.toString().endsWith('.json')) {
+      url = url + '?ts=' + Math.random();
+    }
+    return _origFetch(url, opts);
+  };
+  try {
+    if (typeof liff === 'undefined') throw new Error('LIFF SDK ไม่โหลด');
+    await Promise.race([
+      liff.init({ liffId: LIFF_ID }),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout: liff.init 10s')), 10000))
+    ]);
+    if (!liff.isLoggedIn()) { liff.login({ redirectUri: location.href }); return; }
+    profile = await liff.getProfile();
+    document.getElementById('userName').textContent = profile.displayName;
+    document.getElementById('userAvatar').src = profile.pictureUrl || '';
+    document.getElementById('loadingScreen').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'block';
+  } catch (err) {
+    const msg = (err && (err.message || err.code || JSON.stringify(err))) || 'unknown';
+    document.getElementById('loadingScreen').innerHTML = '<div style="color:#E53935;font-size:13px;text-align:center;padding:20px;">✗ เกิดข้อผิดพลาด<br><small>' + msg + '</small></div>';
+  }
+}
+
+function updateBadge() {
+  const branch = document.getElementById('fBranch').value;
+  const dept = document.getElementById('fDept').value;
+  const badge = document.getElementById('userBadge');
+  if (branch && dept) badge.textContent = branch + ' · ' + dept;
+  else if (branch) badge.textContent = branch;
+  else if (dept) badge.textContent = dept;
+  else badge.textContent = '—';
+}
+
+function toggleCheck(labelId, checkId) {
+  const checked = document.getElementById(checkId).checked;
+  document.getElementById(labelId).classList.toggle('checked', checked);
+}
+
+async function submitForm() {
+  const branch  = document.getElementById('fBranch').value.trim();
+  const dept    = document.getElementById('fDept').value.trim();
+  const empId   = document.getElementById('fEmpId').value.trim();
+  const date    = document.getElementById('fDate').value.trim();
+  const morning = document.getElementById('fMorning').checked;
+  const evening = document.getElementById('fEvening').checked;
+  const reason  = document.getElementById('fReason').value.trim();
+  if (!branch || !dept || !empId || !date || (!morning && !evening) || !reason) { alert('⚠️ กรุณากรอกข้อมูลให้ครบถ้วน และเลือกช่วงเวลาที่ลืมสแกนอย่างน้อย 1 ช่วง'); return; }
+  const [y, m, d] = date.split('-');
+  const displayDate = d + '/' + m + '/' + y;
+  const slots = [];
+  if (morning) slots.push('เช้า');
+  if (evening) slots.push('เย็น');
+  const slotLabel = slots.join(' และ ');
+  const btn = document.getElementById('btnSubmit');
+  btn.disabled = true; btn.textContent = '⏳ กำลังส่ง...';
+  const payload = { type: 'scanNeglect', userId: profile.userId, displayName: profile.displayName, pictureUrl: profile.pictureUrl || '', branch, department: dept, employeeId: empId, date: displayDate, scanSlot: slotLabel, reason };
+  try {
+    await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: new URLSearchParams({ payload: JSON.stringify(payload) }) });
+    document.getElementById('formCard').style.display = 'none';
+    document.querySelector('.user-card').parentElement.style.display = 'none';
+    document.getElementById('successScreen').style.display = 'block';
+    setTimeout(function () { try { liff.closeWindow(); } catch (_) {} }, 3000);
+  } catch (err) {
+    alert('❌ เกิดข้อผิดพลาด\n' + err.message);
+    btn.disabled = false; btn.textContent = '📤 ส่งการแจ้ง';
+  }
+}
+initApp();
+</script>
+</body>
+</html>
