@@ -126,7 +126,7 @@ let myUserId = '', myDisplayName = '';
 async function init() {
   try {
     await Promise.race([
-      liff.init({ liffId: '2010425124-RTlH3ZOA' }),
+      liff.init({ liffId: '2010455823-lh1eT7wo' }),
       new Promise(function(_,rej){ setTimeout(function(){ rej(new Error('LIFF init timeout 10s')); }, 10000); })
     ]);
     if (!liff.isLoggedIn()) { liff.login(); return; }
