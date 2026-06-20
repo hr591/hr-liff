@@ -61,34 +61,12 @@
   <div id="formCard" class="card" style="margin-bottom:0;">
     <div class="form-title">📝 ข้อมูลการแจ้งละเลยสแกนนิ้ว</div>
     <div class="form-group">
-      <label>สาขา <span class="req">*</span></label>
-      <select id="fBranch" onchange="updateBadge()">
-        <option value="">— เลือกสาขา —</option>
-        <option value="สำนักงานใหญ่">สำนักงานใหญ่</option>
-        <option value="สาขาท่ามะกา">สาขาท่ามะกา</option>
-        <option value="สาขาพนมทวน">สาขาพนมทวน</option>
-      </select>
+      <label>รหัสพนักงาน <span class="req">*</span></label>
+      <input type="text" id="fEmpId" placeholder="พิมพ์รหัสพนักงาน เช่น 11001001" maxlength="20" inputmode="numeric" autocomplete="off" onchange="lookupEmp()" oninput="onEmpInput()">
+      <div id="empName" style="font-size:13px;margin-top:7px;font-weight:600;"></div>
     </div>
-    <div class="form-group">
-      <label>แผนก <span class="req">*</span></label>
-      <select id="fDept" onchange="updateBadge()">
-        <option value="">— เลือกแผนก —</option>
-        <option value="ขาย">ขาย</option>
-        <option value="บริการ">บริการ</option>
-        <option value="ตัวถังและสี">ตัวถังและสี</option>
-        <option value="อาคารและสถานที่">อาคารและสถานที่</option>
-        <option value="ลูกค้าสัมพันธ์">ลูกค้าสัมพันธ์</option>
-        <option value="การเงิน">การเงิน</option>
-        <option value="บัญชี">บัญชี</option>
-        <option value="บุคคล">บุคคล</option>
-        <option value="เลขา">เลขา</option>
-        <option value="แม่บ้าน">แม่บ้าน</option>
-        <option value="การตลาดประชาสัมพันธ์">การตลาดประชาสัมพันธ์</option>
-        <option value="Digital Marketing">Digital Marketing</option>
-        <option value="VDQI">VDQI</option>
-      </select>
-    </div>
-    <div class="form-group"><label>รหัสพนักงาน <span class="req">*</span></label><input type="text" id="fEmpId" placeholder="เช่น EMP001" maxlength="20" inputmode="text" autocomplete="off"></div>
+    <div class="form-group"><label>สาขา <span class="req">*</span></label><input type="text" id="fBranch" readonly placeholder="— กรอกรหัสพนักงานก่อน —" style="background:#F0F2F7;color:#555;cursor:not-allowed;"></div>
+    <div class="form-group"><label>แผนก <span class="req">*</span></label><input type="text" id="fDept" readonly placeholder="— กรอกรหัสพนักงานก่อน —" style="background:#F0F2F7;color:#555;cursor:not-allowed;"></div>
     <div class="form-group"><label>วันที่ลืมสแกน <span class="req">*</span></label><input type="date" id="fDate"></div>
     <div class="form-group">
       <label>ลืมสแกนช่วงใด <span class="req">*</span> <small style="color:#aaa;font-weight:400;">(เลือกได้หลายช่วง)</small></label>
@@ -111,6 +89,37 @@
 const LIFF_ID       = '2010455823-xjXt38qU';
 const SCRIPT_URL   = 'https://script.google.com/macros/s/AKfycbyUmPxiU96nNIC06qeki8Nqu7rv2Fk3zM_UzYVGpkL9EshQzIzVSjza0q74koSkUtHxzg/exec';
 let profile = null;
+let empData = null;
+function onEmpInput() {
+  empData = null;
+  document.getElementById('fBranch').value = '';
+  document.getElementById('fDept').value = '';
+  const nb = document.getElementById('empName'); if (nb) nb.textContent = '';
+}
+async function lookupEmp() {
+  const code = document.getElementById('fEmpId').value.trim();
+  const nb = document.getElementById('empName');
+  if (!code) { nb.textContent = ''; return; }
+  nb.textContent = '⏳ กำลังค้นหา...'; nb.style.color = '#888';
+  try {
+    const res = await fetch(SCRIPT_URL + '?action=emp&code=' + encodeURIComponent(code));
+    const d = await res.json();
+    if (d.found) {
+      empData = d;
+      document.getElementById('fBranch').value = d.branch || '';
+      document.getElementById('fDept').value = d.department || '';
+      nb.textContent = '✓ ' + d.name; nb.style.color = '#27AE60';
+      if (typeof updateBadge === 'function') updateBadge();
+    } else {
+      empData = null;
+      document.getElementById('fBranch').value = '';
+      document.getElementById('fDept').value = '';
+      nb.textContent = '✗ ไม่พบรหัสพนักงานนี้ในระบบ'; nb.style.color = '#E53935';
+    }
+  } catch (e) {
+    nb.textContent = '✗ ค้นหาไม่สำเร็จ ลองใหม่'; nb.style.color = '#E53935';
+  }
+}
 
 async function initApp() {
   const _origFetch = window.fetch;
@@ -161,6 +170,7 @@ async function submitForm() {
   const morning = document.getElementById('fMorning').checked;
   const evening = document.getElementById('fEvening').checked;
   const reason  = document.getElementById('fReason').value.trim();
+  if (!empData) { alert('⚠️ กรุณากรอกรหัสพนักงานที่ถูกต้อง (ระบบจะเด้งชื่อ/สาขา/แผนกให้)'); return; }
   if (!branch || !dept || !empId || !date || (!morning && !evening) || !reason) { alert('⚠️ กรุณากรอกข้อมูลให้ครบถ้วน และเลือกช่วงเวลาที่ลืมสแกนอย่างน้อย 1 ช่วง'); return; }
   const [y, m, d] = date.split('-');
   const displayDate = d + '/' + m + '/' + y;
@@ -170,7 +180,7 @@ async function submitForm() {
   const slotLabel = slots.join(' และ ');
   const btn = document.getElementById('btnSubmit');
   btn.disabled = true; btn.textContent = '⏳ กำลังส่ง...';
-  const payload = { type: 'scanNeglect', userId: profile.userId, displayName: profile.displayName, pictureUrl: profile.pictureUrl || '', branch, department: dept, employeeId: empId, date: displayDate, scanSlot: slotLabel, reason };
+  const payload = { type: 'scanNeglect', userId: profile.userId, displayName: (empData && empData.name) ? empData.name : profile.displayName, pictureUrl: profile.pictureUrl || '', branch, department: dept, employeeId: empId, date: displayDate, scanSlot: slotLabel, reason };
   try {
     await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: new URLSearchParams({ payload: JSON.stringify(payload) }) });
     document.getElementById('formCard').style.display = 'none';
