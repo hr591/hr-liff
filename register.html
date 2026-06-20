@@ -167,11 +167,11 @@ async function submitRegister() {
   btn.disabled = true; btn.textContent = 'กำลังบันทึก...';
   try {
     const res = await fetch(SCRIPT_URL, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 'registerManager', userId: myUserId, displayName: myDisplayName, branch, department: dept })
+      method: 'POST',
+      body: new URLSearchParams({ payload: JSON.stringify({ type: 'registerManager', userId: myUserId, displayName: myDisplayName, branch, department: dept }) })
     });
     const data = await res.json();
-    showMsg('✅ ' + data.message, 'success');
+    showMsg('✅ ' + (data.message || 'ลงทะเบียนสำเร็จ'), 'success');
     document.getElementById('currentBranchDept').textContent = branch + ' / ' + (dept === 'DEFAULT' ? 'หัวหน้าสาขา' : dept);
     document.getElementById('currentStatusBox').style.display = 'block';
     document.getElementById('btnCancel').style.display = 'block';
@@ -185,11 +185,11 @@ async function cancelRegister() {
   btn.disabled = true;
   try {
     const res = await fetch(SCRIPT_URL, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 'registerManager', userId: myUserId, branch: '', department: '__CANCEL__' })
+      method: 'POST',
+      body: new URLSearchParams({ payload: JSON.stringify({ type: 'registerManager', userId: myUserId, branch: '', department: '__CANCEL__' }) })
     });
     const data = await res.json();
-    showMsg('🗑️ ' + data.message, 'success');
+    showMsg('🗑️ ' + (data.message || 'ยกเลิกแล้ว'), 'success');
     document.getElementById('currentStatusBox').style.display = 'none';
     document.getElementById('btnCancel').style.display = 'none';
     document.getElementById('branchSel').value = '';
