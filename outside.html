@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<script>
+(function(){ try{
+  var P='line-scdn.net';
+  var OF=window.fetch;
+  if(OF){ window.fetch=function(u,o){ try{ var s=(u&&u.url)?u.url:(''+u); if(s.indexOf(P)!==-1){ o=Object.assign({},o,{cache:'no-store'}); } }catch(e){} return OF.call(this,u,o); }; }
+  var XO=XMLHttpRequest.prototype.open;
+  XMLHttpRequest.prototype.open=function(m,url){ try{ if(typeof url==='string'&&url.indexOf(P)!==-1){ url+=(url.indexOf('?')===-1?'?':'&')+'_n='+Date.now(); arguments[1]=url; } }catch(e){} return XO.apply(this,arguments); };
+}catch(e){} })();
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ออกนอกบริษัท</title>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, 'Prompt', 'Noto Sans Thai', sans-serif; background: #EEF2F7; min-height: 100vh; color: #1A1A2E; }
+  .header { background: linear-gradient(135deg, #27AE60 0%, #1E8449 100%); color: #fff; padding: 22px 16px 18px; text-align: center; position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 12px rgba(39,174,96,0.3); }
+  .header h1 { font-size: 17px; font-weight: 700; }
+  .header sub { font-size: 11px; opacity: 0.85; display: block; margin-top: 3px; }
+  .card { background: #fff; border-radius: 14px; padding: 16px; margin: 14px 14px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.07); }
+  .user-card { display: flex; align-items: center; gap: 13px; }
+  .avatar { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2.5px solid #DCF5E6; background: #DCF5E6; }
+  .user-name { font-size: 15px; font-weight: 700; }
+  .user-badge { display: inline-block; font-size: 10px; background: #E8F8EF; color: #1E8449; border-radius: 20px; padding: 2px 8px; margin-top: 4px; font-weight: 600; }
+  .form-title { font-size: 13px; font-weight: 700; color: #444; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid #F0F0F0; }
+  .form-group { margin-bottom: 14px; }
+  .form-group label { display: block; font-size: 12px; font-weight: 600; color: #666; margin-bottom: 6px; }
+  .req { color: #E53935; margin-left: 2px; }
+  input, textarea { width: 100%; padding: 11px 13px; border: 1.5px solid #DDE3F0; border-radius: 9px; font-size: 14px; color: #1A1A2E; background: #FAFBFF; -webkit-appearance: none; transition: border-color .18s, box-shadow .18s; font-family: inherit; }
+  input:focus, textarea:focus { outline: none; border-color: #27AE60; box-shadow: 0 0 0 3px rgba(39,174,96,0.12); background: #fff; }
+  textarea { resize: none; height: 80px; line-height: 1.5; }
+  .row2 { display: flex; gap: 10px; }
+  .row2 .form-group { flex: 1; }
+  .btn { width: 100%; padding: 14px; color: #fff; border: none; border-radius: 11px; font-size: 15px; font-weight: 700; cursor: pointer; transition: opacity .2s, transform .1s; font-family: inherit; margin-top: 6px; }
+  .btn-go { background: linear-gradient(135deg, #27AE60, #1E8449); }
+  .btn-back { background: linear-gradient(135deg, #1A73E8, #0D47A1); }
+  .btn:active { opacity: .85; transform: scale(.99); }
+  .btn:disabled { background: #B0BEC5; cursor: not-allowed; }
+  .gpsNote { font-size: 11px; color: #888; margin-top: 8px; text-align: center; }
+  #okScreen { display: none; text-align: center; padding: 46px 24px; margin: 14px; background: #fff; border-radius: 16px; box-shadow: 0 2px 10px rgba(0,0,0,.07); }
+  .ok-icon { font-size: 54px; margin-bottom: 12px; }
+  .ok-title { font-size: 19px; font-weight: 700; color: #27AE60; }
+  .ok-desc { font-size: 13px; color: #888; margin-top: 10px; line-height: 1.7; }
+  #loadingScreen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; gap: 14px; color: #888; font-size: 14px; }
+  .spinner { width: 36px; height: 36px; border: 3px solid #DCF5E6; border-top-color: #27AE60; border-radius: 50%; animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .openbox { background:#FFF8E1; border:1.5px solid #FFE082; border-radius:12px; padding:14px; margin-bottom:14px; font-size:13px; line-height:1.7; color:#5D4037; }
+  .spacer { height: 24px; }
+</style>
+</head>
+<body>
+<div id="loadingScreen"><div class="spinner"></div><span>กำลังโหลด...</span></div>
+
+<div id="mainApp" style="display:none;">
+  <div class="header"><h1>🚶 ออกนอกบริษัท</h1><sub>ขออนุญาตหัวหน้า · จับพิกัด GPS ตอนออก/กลับ</sub></div>
+  <div class="card user-card">
+    <img id="userAvatar" class="avatar" src="" alt="avatar">
+    <div><div id="userName" class="user-name">—</div><div id="userBadge" class="user-badge">—</div></div>
+  </div>
+
+  <!-- โหมดขอออก -->
+  <div id="formCard" class="card" style="margin-bottom:0; display:none;">
+    <div class="form-title">📝 ขออนุญาตออกนอกบริษัท</div>
+    <div class="form-group">
+      <label>รหัสพนักงาน <span class="req">*</span></label>
+      <input type="text" id="fEmpId" placeholder="พิมพ์รหัสพนักงาน เช่น 11001001" maxlength="20" inputmode="numeric" autocomplete="off" onchange="lookupEmp()" oninput="onEmpInput()">
+      <div id="empName" style="font-size:13px;margin-top:7px;font-weight:600;"></div>
+    </div>
+    <div class="form-group"><label>สาขา <span class="req">*</span></label><input type="text" id="fBranch" readonly placeholder="— กรอกรหัสพนักงานก่อน —" style="background:#F0F2F7;color:#555;cursor:not-allowed;"></div>
+    <div class="form-group"><label>แผนก <span class="req">*</span></label><input type="text" id="fDept" readonly placeholder="— กรอกรหัสพนักงานก่อน —" style="background:#F0F2F7;color:#555;cursor:not-allowed;"></div>
+    <div class="form-group"><label>วันที่ <span class="req">*</span></label><input type="date" id="fDate"></div>
+    <div class="row2">
+      <div class="form-group"><label>เวลาออก <span class="req">*</span></label><input type="time" id="fTimeOut"></div>
+      <div class="form-group"><label>เวลากลับ (โดยประมาณ) <span class="req">*</span></label><input type="time" id="fTimeBack"></div>
+    </div>
+    <div class="form-group"><label>เหตุผล <span class="req">*</span></label><textarea id="fReason" placeholder="เช่น ไปติดต่อราชการ, ส่งของลูกค้า..."></textarea></div>
+    <button class="btn btn-go" id="btnGo" onclick="submitOut()">📤 ขออนุญาตออก (จับพิกัด)</button>
+    <div class="gpsNote">📍 ระบบจะขอเข้าถึงตำแหน่ง GPS ตอนกด — กรุณากด "อนุญาต"</div>
+  </div>
+
+  <!-- โหมดกลับเข้าบริษัท -->
+  <div id="backCard" class="card" style="margin-bottom:0; display:none;">
+    <div class="form-title">🔙 คุณมีรายการออกนอกบริษัทที่ยังไม่ปิด</div>
+    <div id="openInfo" class="openbox"></div>
+    <button class="btn btn-back" id="btnBack" onclick="submitBack()">✅ กลับเข้าบริษัทแล้ว (จับพิกัด)</button>
+    <div class="gpsNote">📍 ระบบจะจับพิกัด GPS ที่คุณกดปุ่มนี้</div>
+  </div>
+
+  <div id="okScreen">
+    <div class="ok-icon">✅</div>
+    <div id="okTitle" class="ok-title">สำเร็จ!</div>
+    <div id="okDesc" class="ok-desc"></div>
+  </div>
+
+  <div class="spacer"></div>
+</div>
+
+<script>
+const LIFF_ID    = '2010455823-LXFHaTWm';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyUmPxiU96nNIC06qeki8Nqu7rv2Fk3zM_UzYVGpkL9EshQzIzVSjza0q74koSkUtHxzg/exec';
+let profile = null, empData = null, openReq = null;
+
+function getGPS() {
+  return new Promise(function(resolve){
+    if (!navigator.geolocation) { resolve({error:'no geolocation'}); return; }
+    navigator.geolocation.getCurrentPosition(
+      function(p){ resolve({ lat:+p.coords.latitude.toFixed(6), lng:+p.coords.longitude.toFixed(6), acc:Math.round(p.coords.accuracy||0) }); },
+      function(e){ resolve({ error:(e.code+': '+e.message) }); },
+      { enableHighAccuracy:true, timeout:12000, maximumAge:0 }
+    );
+  });
+}
+
+async function initApp() {
+  try {
+    if (typeof liff === 'undefined') throw new Error('LIFF SDK ไม่โหลด');
+    await Promise.race([
+      liff.init({ liffId: LIFF_ID }),
+      new Promise(function(_,rej){ setTimeout(function(){ rej(new Error('Timeout: liff.init 10s')); }, 10000); })
+    ]);
+    if (!liff.isLoggedIn()) { liff.login({ redirectUri: location.href }); return; }
+    profile = await liff.getProfile();
+    document.getElementById('userName').textContent = profile.displayName;
+    document.getElementById('userAvatar').src = profile.pictureUrl || '';
+    document.getElementById('fDate').value = new Date().toISOString().slice(0,10);
+    // เช็คว่ามีรายการที่ยังไม่ปิดไหม
+    try {
+      const res = await fetch(SCRIPT_URL + '?action=outsideOpen&userId=' + encodeURIComponent(profile.userId));
+      const d = await res.json();
+      if (d && d.open) { openReq = d; showBackMode(d); }
+      else showFormMode();
+    } catch(_) { showFormMode(); }
+    document.getElementById('loadingScreen').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'block';
+  } catch (err) {
+    document.getElementById('loadingScreen').innerHTML = '<div style="color:#E53935;font-size:13px;text-align:center;padding:20px;">✗ เกิดข้อผิดพลาด<br><small>' + (err && err.message || err) + '</small></div>';
+  }
+}
+
+function showFormMode() {
+  document.getElementById('formCard').style.display = 'block';
+  document.getElementById('backCard').style.display = 'none';
+}
+function showBackMode(d) {
+  document.getElementById('backCard').style.display = 'block';
+  document.getElementById('formCard').style.display = 'none';
+  document.getElementById('userBadge').textContent = (d.branch||'') + ' · ' + (d.department||'');
+  document.getElementById('openInfo').innerHTML =
+    '📅 วันที่: <b>' + (d.date||'-') + '</b><br>' +
+    '⏰ ออกเวลา: <b>' + (d.timeOut||'-') + '</b> · กลับ(ประมาณ): <b>' + (d.timeBack||'-') + '</b><br>' +
+    '📝 เหตุผล: ' + (d.reason||'-') + '<br>' +
+    '📌 สถานะ: <b>' + (d.status||'-') + '</b>';
+}
+
+function onEmpInput() {
+  empData = null;
+  document.getElementById('fBranch').value = '';
+  document.getElementById('fDept').value = '';
+  const nb = document.getElementById('empName'); if (nb) nb.textContent = '';
+}
+async function lookupEmp() {
+  const code = document.getElementById('fEmpId').value.trim();
+  const nb = document.getElementById('empName');
+  if (!code) { nb.textContent = ''; return; }
+  nb.textContent = '⏳ กำลังค้นหา...'; nb.style.color = '#888';
+  try {
+    const res = await fetch(SCRIPT_URL + '?action=emp&code=' + encodeURIComponent(code));
+    const d = await res.json();
+    if (d.found) {
+      empData = d;
+      document.getElementById('fBranch').value = d.branch || '';
+      document.getElementById('fDept').value = d.department || '';
+      document.getElementById('userBadge').textContent = (d.branch||'') + ' · ' + (d.department||'');
+      nb.textContent = '✓ ' + d.name; nb.style.color = '#27AE60';
+    } else {
+      empData = null;
+      document.getElementById('fBranch').value = '';
+      document.getElementById('fDept').value = '';
+      nb.textContent = '✗ ไม่พบรหัสพนักงานนี้ในระบบ'; nb.style.color = '#E53935';
+    }
+  } catch (e) { nb.textContent = '✗ ค้นหาไม่สำเร็จ ลองใหม่'; nb.style.color = '#E53935'; }
+}
+
+async function submitOut() {
+  const empId  = document.getElementById('fEmpId').value.trim();
+  const branch = document.getElementById('fBranch').value.trim();
+  const dept   = document.getElementById('fDept').value.trim();
+  const date   = document.getElementById('fDate').value.trim();
+  const tOut    = document.getElementById('fTimeOut').value.trim();
+  const tBack    = document.getElementById('fTimeBack').value.trim();
+  const reason = document.getElementById('fReason').value.trim();
+  if (!empData) { alert('⚠️ กรุณากรอกรหัสพนักงานที่ถูกต้อง'); return; }
+  if (!empId || !branch || !dept || !date || !tOut || !tBack || !reason) { alert('⚠️ กรุณากรอกข้อมูลให้ครบถ้วน'); return; }
+  const btn = document.getElementById('btnGo');
+  btn.disabled = true; btn.textContent = '📍 กำลังจับพิกัด...';
+  const gps = await getGPS();
+  if (gps && gps.error) { if (!confirm('จับพิกัด GPS ไม่สำเร็จ (' + gps.error + ')\nต้องการส่งคำขอต่อโดยไม่มีพิกัดไหม?')) { btn.disabled=false; btn.textContent='📤 ขออนุญาตออก (จับพิกัด)'; return; } }
+  btn.textContent = '⏳ กำลังส่ง...';
+  const [y,m,dd] = date.split('-');
+  const payload = {
+    type:'goOutside', userId:profile.userId,
+    displayName: empData.name || profile.displayName,
+    pictureUrl: profile.pictureUrl||'',
+    branch, department:dept, employeeId:empId,
+    date: dd+'/'+m+'/'+y, timeOut:tOut, timeBack:tBack, reason,
+    gpsOut: (gps && gps.lat!=null) ? (gps.lat+','+gps.lng) : (gps && gps.error ? ('error:'+gps.error) : '')
+  };
+  try {
+    await fetch(SCRIPT_URL, { method:'POST', mode:'no-cors', body:new URLSearchParams({ payload: JSON.stringify(payload) }) });
+    document.getElementById('formCard').style.display='none';
+    document.querySelector('.user-card').parentElement.style.display='none';
+    document.getElementById('okTitle').textContent = 'ส่งคำขอออกแล้ว!';
+    document.getElementById('okDesc').innerHTML = 'รอหัวหน้าอนุมัติ<br>เมื่อกลับถึงบริษัท ให้เปิดเมนูนี้อีกครั้งแล้วกด "กลับเข้าบริษัทแล้ว"<br><br><small style="color:#bbb;">หน้าต่างจะปิดอัตโนมัติ...</small>';
+    document.getElementById('okScreen').style.display='block';
+    setTimeout(function(){ try{ liff.closeWindow(); }catch(_){} }, 4000);
+  } catch (err) { alert('❌ เกิดข้อผิดพลาด\n' + err.message); btn.disabled=false; btn.textContent='📤 ขออนุญาตออก (จับพิกัด)'; }
+}
+
+async function submitBack() {
+  if (!openReq) return;
+  const btn = document.getElementById('btnBack');
+  btn.disabled = true; btn.textContent = '📍 กำลังจับพิกัด...';
+  const gps = await getGPS();
+  if (gps && gps.error) { if (!confirm('จับพิกัด GPS ไม่สำเร็จ (' + gps.error + ')\nต้องการยืนยันกลับโดยไม่มีพิกัดไหม?')) { btn.disabled=false; btn.textContent='✅ กลับเข้าบริษัทแล้ว (จับพิกัด)'; return; } }
+  btn.textContent = '⏳ กำลังบันทึก...';
+  const payload = { type:'goOutsideReturn', id:openReq.id, userId:profile.userId,
+    gpsBack: (gps && gps.lat!=null) ? (gps.lat+','+gps.lng) : (gps && gps.error ? ('error:'+gps.error) : '') };
+  try {
+    await fetch(SCRIPT_URL, { method:'POST', mode:'no-cors', body:new URLSearchParams({ payload: JSON.stringify(payload) }) });
+    document.getElementById('backCard').style.display='none';
+    document.querySelector('.user-card').parentElement.style.display='none';
+    document.getElementById('okTitle').textContent = 'บันทึกการกลับแล้ว!';
+    document.getElementById('okDesc').innerHTML = 'บันทึกเวลากลับ + พิกัด GPS เรียบร้อย<br>แจ้งหัวหน้าแล้ว<br><br><small style="color:#bbb;">หน้าต่างจะปิดอัตโนมัติ...</small>';
+    document.getElementById('okScreen').style.display='block';
+    setTimeout(function(){ try{ liff.closeWindow(); }catch(_){} }, 3500);
+  } catch (err) { alert('❌ เกิดข้อผิดพลาด\n' + err.message); btn.disabled=false; btn.textContent='✅ กลับเข้าบริษัทแล้ว (จับพิกัด)'; }
+}
+
+initApp();
+</script>
+</body>
+</html>
