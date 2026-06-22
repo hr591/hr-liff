@@ -85,8 +85,8 @@
   <div id="backCard" class="card" style="margin-bottom:0; display:none;">
     <div class="form-title">🔙 คุณมีรายการออกนอกบริษัทที่ยังไม่ปิด</div>
     <div id="openInfo" class="openbox"></div>
-    <button class="btn btn-back" id="btnBack" onclick="startBack()">✅ กลับเข้าบริษัทแล้ว (ถ่ายรูป+จับพิกัด)</button>
-    <input type="file" accept="image/*" capture="user" id="selfieInput" style="display:none">
+    <label class="btn btn-back" id="btnBack" for="selfieInput" style="display:block;text-align:center;cursor:pointer;">✅ กลับเข้าบริษัทแล้ว (ถ่ายรูป+จับพิกัด)</label>
+    <input type="file" accept="image/*" capture="user" id="selfieInput" onchange="onSelfie(this)" style="position:absolute;width:1px;height:1px;opacity:0;left:-9999px;">
     <div class="gpsNote">📸 กดแล้วถ่ายเซลฟี่ ณ จุดที่กลับ + ระบบจับพิกัด GPS อัตโนมัติ</div>
   </div>
 
@@ -220,18 +220,13 @@ async function submitOut() {
   } catch (err) { alert('❌ เกิดข้อผิดพลาด\n' + err.message); btn.disabled=false; btn.textContent='📤 ขออนุญาตออก (จับพิกัด)'; }
 }
 
-function startBack() {
+function onSelfie(inp) {
   if (!openReq) return;
-  const inp = document.getElementById('selfieInput');
-  inp.value = '';
-  inp.onchange = function() {
-    const f = inp.files && inp.files[0];
-    if (!f) return;                       // ยกเลิกกล้อง = ไม่ทำอะไร
-    const btn = document.getElementById('btnBack');
-    btn.disabled = true; btn.textContent = '🖼️ กำลังเตรียมรูป...';
-    compressImage(f, function(b64){ submitBack(b64); });
-  };
-  inp.click();
+  const f = inp.files && inp.files[0];
+  if (!f) return;                         // ยกเลิกกล้อง = ไม่ทำอะไร
+  const btn = document.getElementById('btnBack');
+  btn.style.pointerEvents = 'none'; btn.textContent = '🖼️ กำลังเตรียมรูป...';
+  compressImage(f, function(b64){ submitBack(b64); });
 }
 
 function compressImage(file, cb) {
@@ -258,7 +253,7 @@ async function submitBack(photoB64) {
   const btn = document.getElementById('btnBack');
   btn.disabled = true; btn.textContent = '📍 กำลังจับพิกัด...';
   const gps = await getGPS();
-  if (gps && gps.error) { if (!confirm('จับพิกัด GPS ไม่สำเร็จ (' + gps.error + ')\nต้องการยืนยันกลับโดยไม่มีพิกัดไหม?')) { btn.disabled=false; btn.textContent='✅ กลับเข้าบริษัทแล้ว (ถ่ายรูป+จับพิกัด)'; return; } }
+  if (gps && gps.error) { if (!confirm('จับพิกัด GPS ไม่สำเร็จ (' + gps.error + ')\nต้องการยืนยันกลับโดยไม่มีพิกัดไหม?')) { btn.disabled=false; btn.style.pointerEvents=''; btn.textContent='✅ กลับเข้าบริษัทแล้ว (ถ่ายรูป+จับพิกัด)'; return; } }
   btn.textContent = '⏳ กำลังบันทึก...';
   const payload = { type:'goOutsideReturn', id:openReq.id, userId:profile.userId,
     gpsBack: (gps && gps.lat!=null) ? (gps.lat+','+gps.lng) : (gps && gps.error ? ('error:'+gps.error) : ''),
@@ -271,7 +266,7 @@ async function submitBack(photoB64) {
     document.getElementById('okDesc').innerHTML = 'บันทึกเวลากลับ + พิกัด GPS เรียบร้อย<br>แจ้งหัวหน้าแล้ว<br><br><small style="color:#bbb;">หน้าต่างจะปิดอัตโนมัติ...</small>';
     document.getElementById('okScreen').style.display='block';
     setTimeout(function(){ try{ liff.closeWindow(); }catch(_){} }, 3500);
-  } catch (err) { alert('❌ เกิดข้อผิดพลาด\n' + err.message); btn.disabled=false; btn.textContent='✅ กลับเข้าบริษัทแล้ว (ถ่ายรูป+จับพิกัด)'; }
+  } catch (err) { alert('❌ เกิดข้อผิดพลาด\n' + err.message); btn.disabled=false; btn.style.pointerEvents=''; btn.textContent='✅ กลับเข้าบริษัทแล้ว (ถ่ายรูป+จับพิกัด)'; }
 }
 
 initApp();
