@@ -85,10 +85,18 @@
   <div id="backCard" class="card" style="margin-bottom:0; display:none;">
     <div class="form-title">🔙 คุณมีรายการออกนอกบริษัทที่ยังไม่ปิด</div>
     <div id="openInfo" class="openbox"></div>
-    <label class="btn btn-back" id="btnBack" for="selfieInput" style="display:block;text-align:center;cursor:pointer;">✅ กลับเข้าบริษัทแล้ว (ถ่ายรูป+จับพิกัด)</label>
-    <input type="file" accept="image/*" capture="user" id="selfieInput" onchange="onSelfie(this)" style="position:absolute;width:1px;height:1px;opacity:0;left:-9999px;">
-    <div class="gpsNote">📸 กดแล้วถ่ายเซลฟี่ ณ จุดที่กลับ + ระบบจับพิกัด GPS อัตโนมัติ</div>
+    <button class="btn btn-back" id="btnBack" onclick="startBack()">✅ กลับเข้าบริษัทแล้ว (ถ่ายรูป+จับพิกัด)</button>
+    <div class="gpsNote">📸 กดแล้วกล้องจะเปิดให้ <b>ถ่ายสดเท่านั้น</b> (เลือกรูปเก่าไม่ได้) + จับพิกัด GPS อัตโนมัติ</div>
   </div>
+
+  <div id="camModal" style="display:none;position:fixed;inset:0;background:#000;z-index:9999;flex-direction:column;align-items:center;justify-content:center;">
+    <video id="camVideo" autoplay playsinline muted style="max-width:100%;max-height:74vh;border-radius:8px;"></video>
+    <div style="position:fixed;bottom:26px;left:0;right:0;display:flex;gap:16px;justify-content:center;">
+      <button onclick="cancelCam()" style="padding:14px 22px;border:none;border-radius:30px;background:#555;color:#fff;font-size:16px;">ยกเลิก</button>
+      <button onclick="capturePhoto()" style="padding:14px 30px;border:none;border-radius:30px;background:#27AE60;color:#fff;font-size:16px;font-weight:bold;">📸 ถ่ายรูป</button>
+    </div>
+  </div>
+  <canvas id="camCanvas" style="display:none;"></canvas>
 
   <div id="okScreen">
     <div class="ok-icon">✅</div>
@@ -220,32 +228,51 @@ async function submitOut() {
   } catch (err) { alert('❌ เกิดข้อผิดพลาด\n' + err.message); btn.disabled=false; btn.textContent='📤 ขออนุญาตออก (จับพิกัด)'; }
 }
 
-function onSelfie(inp) {
+let camStream = null;
+
+async function startBack() {
   if (!openReq) return;
-  const f = inp.files && inp.files[0];
-  if (!f) return;                         // ยกเลิกกล้อง = ไม่ทำอะไร
   const btn = document.getElementById('btnBack');
-  btn.style.pointerEvents = 'none'; btn.textContent = '🖼️ กำลังเตรียมรูป...';
-  compressImage(f, function(b64){ submitBack(b64); });
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    alert('❌ อุปกรณ์/เบราว์เซอร์นี้เปิดกล้องสดไม่ได้\nกรุณาเปิดผ่านแอป LINE'); return;
+  }
+  btn.disabled = true; btn.textContent = '📷 กำลังเปิดกล้อง...';
+  try {
+    camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+    const v = document.getElementById('camVideo');
+    v.srcObject = camStream;
+    document.getElementById('camModal').style.display = 'flex';
+  } catch (e) {
+    btn.disabled = false; btn.textContent = '✅ กลับเข้าบริษัทแล้ว (ถ่ายรูป+จับพิกัด)';
+    alert('❌ เปิดกล้องไม่ได้: ' + (e && e.message || e) + '\nกรุณาอนุญาตให้ LINE เข้าถึงกล้องในตั้งค่าเครื่อง แล้วลองใหม่');
+  }
 }
 
-function compressImage(file, cb) {
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    const img = new Image();
-    img.onload = function() {
-      let max = 800, w = img.width, h = img.height;
-      if (w > h && w > max) { h = Math.round(h*max/w); w = max; }
-      else if (h >= w && h > max) { w = Math.round(w*max/h); h = max; }
-      const c = document.createElement('canvas'); c.width = w; c.height = h;
-      c.getContext('2d').drawImage(img, 0, 0, w, h);
-      try { cb(c.toDataURL('image/jpeg', 0.6)); } catch(_) { cb(''); }
-    };
-    img.onerror = function(){ cb(''); };
-    img.src = e.target.result;
-  };
-  reader.onerror = function(){ cb(''); };
-  reader.readAsDataURL(file);
+function capturePhoto() {
+  const v = document.getElementById('camVideo'), c = document.getElementById('camCanvas');
+  let w = v.videoWidth, h = v.videoHeight, max = 800;
+  if (!w || !h) { alert('กล้องยังไม่พร้อม รอสักครู่แล้วลองใหม่'); return; }
+  let sw = w, sh = h;
+  if (w > h && w > max) { sh = Math.round(h*max/w); sw = max; }
+  else if (h >= w && h > max) { sw = Math.round(w*max/h); sh = max; }
+  c.width = sw; c.height = sh;
+  c.getContext('2d').drawImage(v, 0, 0, sw, sh);
+  let b64 = '';
+  try { b64 = c.toDataURL('image/jpeg', 0.6); } catch(_) {}
+  stopCam();
+  document.getElementById('camModal').style.display = 'none';
+  submitBack(b64);
+}
+
+function stopCam() {
+  if (camStream) { camStream.getTracks().forEach(function(t){ t.stop(); }); camStream = null; }
+}
+
+function cancelCam() {
+  stopCam();
+  document.getElementById('camModal').style.display = 'none';
+  const btn = document.getElementById('btnBack');
+  btn.disabled = false; btn.style.pointerEvents = ''; btn.textContent = '✅ กลับเข้าบริษัทแล้ว (ถ่ายรูป+จับพิกัด)';
 }
 
 async function submitBack(photoB64) {
