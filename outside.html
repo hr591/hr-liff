@@ -85,8 +85,9 @@
   <div id="backCard" class="card" style="margin-bottom:0; display:none;">
     <div class="form-title">🔙 คุณมีรายการออกนอกบริษัทที่ยังไม่ปิด</div>
     <div id="openInfo" class="openbox"></div>
-    <button class="btn btn-back" id="btnBack" onclick="submitBack()">✅ กลับเข้าบริษัทแล้ว (จับพิกัด)</button>
-    <div class="gpsNote">📍 ระบบจะจับพิกัด GPS ที่คุณกดปุ่มนี้</div>
+    <button class="btn btn-back" id="btnBack" onclick="startBack()">✅ กลับเข้าบริษัทแล้ว (ถ่ายรูป+จับพิกัด)</button>
+    <input type="file" accept="image/*" capture="user" id="selfieInput" style="display:none">
+    <div class="gpsNote">📸 กดแล้วถ่ายเซลฟี่ ณ จุดที่กลับ + ระบบจับพิกัด GPS อัตโนมัติ</div>
   </div>
 
   <div id="okScreen">
@@ -219,15 +220,49 @@ async function submitOut() {
   } catch (err) { alert('❌ เกิดข้อผิดพลาด\n' + err.message); btn.disabled=false; btn.textContent='📤 ขออนุญาตออก (จับพิกัด)'; }
 }
 
-async function submitBack() {
+function startBack() {
+  if (!openReq) return;
+  const inp = document.getElementById('selfieInput');
+  inp.value = '';
+  inp.onchange = function() {
+    const f = inp.files && inp.files[0];
+    if (!f) return;                       // ยกเลิกกล้อง = ไม่ทำอะไร
+    const btn = document.getElementById('btnBack');
+    btn.disabled = true; btn.textContent = '🖼️ กำลังเตรียมรูป...';
+    compressImage(f, function(b64){ submitBack(b64); });
+  };
+  inp.click();
+}
+
+function compressImage(file, cb) {
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = new Image();
+    img.onload = function() {
+      let max = 800, w = img.width, h = img.height;
+      if (w > h && w > max) { h = Math.round(h*max/w); w = max; }
+      else if (h >= w && h > max) { w = Math.round(w*max/h); h = max; }
+      const c = document.createElement('canvas'); c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      try { cb(c.toDataURL('image/jpeg', 0.6)); } catch(_) { cb(''); }
+    };
+    img.onerror = function(){ cb(''); };
+    img.src = e.target.result;
+  };
+  reader.onerror = function(){ cb(''); };
+  reader.readAsDataURL(file);
+}
+
+async function submitBack(photoB64) {
   if (!openReq) return;
   const btn = document.getElementById('btnBack');
   btn.disabled = true; btn.textContent = '📍 กำลังจับพิกัด...';
   const gps = await getGPS();
-  if (gps && gps.error) { if (!confirm('จับพิกัด GPS ไม่สำเร็จ (' + gps.error + ')\nต้องการยืนยันกลับโดยไม่มีพิกัดไหม?')) { btn.disabled=false; btn.textContent='✅ กลับเข้าบริษัทแล้ว (จับพิกัด)'; return; } }
+  if (gps && gps.error) { if (!confirm('จับพิกัด GPS ไม่สำเร็จ (' + gps.error + ')\nต้องการยืนยันกลับโดยไม่มีพิกัดไหม?')) { btn.disabled=false; btn.textContent='✅ กลับเข้าบริษัทแล้ว (ถ่ายรูป+จับพิกัด)'; return; } }
   btn.textContent = '⏳ กำลังบันทึก...';
   const payload = { type:'goOutsideReturn', id:openReq.id, userId:profile.userId,
-    gpsBack: (gps && gps.lat!=null) ? (gps.lat+','+gps.lng) : (gps && gps.error ? ('error:'+gps.error) : '') };
+    gpsBack: (gps && gps.lat!=null) ? (gps.lat+','+gps.lng) : (gps && gps.error ? ('error:'+gps.error) : ''),
+    photoBack: photoB64 || '' };
   try {
     await fetch(SCRIPT_URL, { method:'POST', mode:'no-cors', body:new URLSearchParams({ payload: JSON.stringify(payload) }) });
     document.getElementById('backCard').style.display='none';
@@ -236,7 +271,7 @@ async function submitBack() {
     document.getElementById('okDesc').innerHTML = 'บันทึกเวลากลับ + พิกัด GPS เรียบร้อย<br>แจ้งหัวหน้าแล้ว<br><br><small style="color:#bbb;">หน้าต่างจะปิดอัตโนมัติ...</small>';
     document.getElementById('okScreen').style.display='block';
     setTimeout(function(){ try{ liff.closeWindow(); }catch(_){} }, 3500);
-  } catch (err) { alert('❌ เกิดข้อผิดพลาด\n' + err.message); btn.disabled=false; btn.textContent='✅ กลับเข้าบริษัทแล้ว (จับพิกัด)'; }
+  } catch (err) { alert('❌ เกิดข้อผิดพลาด\n' + err.message); btn.disabled=false; btn.textContent='✅ กลับเข้าบริษัทแล้ว (ถ่ายรูป+จับพิกัด)'; }
 }
 
 initApp();
