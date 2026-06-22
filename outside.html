@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <script>
 (function(){ try{
   var P='line-scdn.net';
@@ -153,13 +156,22 @@ function showFormMode() {
   document.getElementById('formCard').style.display = 'block';
   document.getElementById('backCard').style.display = 'none';
 }
+function fmtHM(s) {
+  if (!s) return '-';
+  s = String(s);
+  var m = s.match(/T(\d{2}):(\d{2})/);            // ISO เช่น 1899-12-30T09:52:..
+  if (m) return m[1] + ':' + m[2];
+  var m2 = s.match(/^(\d{1,2}):(\d{2})/);          // "9:52" / "09:52"
+  if (m2) return ('0' + m2[1]).slice(-2) + ':' + m2[2];
+  return s;
+}
 function showBackMode(d) {
   document.getElementById('backCard').style.display = 'block';
   document.getElementById('formCard').style.display = 'none';
   document.getElementById('userBadge').textContent = (d.branch||'') + ' · ' + (d.department||'');
   document.getElementById('openInfo').innerHTML =
     '📅 วันที่: <b>' + (d.date||'-') + '</b><br>' +
-    '⏰ ออกเวลา: <b>' + (d.timeOut||'-') + '</b> · กลับ(ประมาณ): <b>' + (d.timeBack||'-') + '</b><br>' +
+    '⏰ ออกเวลา: <b>' + fmtHM(d.timeOut) + '</b> · กลับ(ประมาณ): <b>' + fmtHM(d.timeBack) + '</b><br>' +
     '📝 เหตุผล: ' + (d.reason||'-') + '<br>' +
     '📌 สถานะ: <b>' + (d.status||'-') + '</b>';
 }
