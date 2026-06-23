@@ -158,6 +158,10 @@
       ✅ ปัจจุบันลงทะเบียนเป็นหัวหน้า: <b id="currentBranchDept"></b>
     </div>
 
+    <label>รหัสพนักงานของคุณ</label>
+    <input type="text" id="empId" inputmode="numeric" placeholder="กรอกรหัสพนักงาน" oninput="onEmpInput()" onchange="lookupEmp()" style="width:100%;padding:12px 14px;border:1.5px solid #ddd;border-radius:10px;font-size:15px;font-family:inherit;box-sizing:border-box;">
+    <div id="empName" style="font-size:13px;margin:6px 0 16px;color:#888;">กรอกรหัสเพื่อยืนยันตัวตน — ระบบจะใช้ชื่อจริงแทนชื่อ LINE</div>
+
     <label>สาขา</label>
     <select id="branchSel" onchange="updateDeptLabel()">
       <option value="">— เลือกสาขา —</option>
@@ -214,6 +218,40 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyUmPxiU96nNIC06qeki
 let myUserId = '';
 let myDisplayName = '';
 let selectedDepts = [];
+let empData = null;
+
+function onEmpInput() {
+  empData = null;
+  var nb = document.getElementById('empName');
+  nb.textContent = 'กรอกรหัสเพื่อยืนยันตัวตน — ระบบจะใช้ชื่อจริงแทนชื่อ LINE';
+  nb.style.color = '#888';
+}
+
+async function lookupEmp() {
+  var code = document.getElementById('empId').value.trim();
+  var nb = document.getElementById('empName');
+  if (!code) { onEmpInput(); return; }
+  nb.textContent = '⏳ กำลังค้นหา...'; nb.style.color = '#888';
+  try {
+    var res = await fetch(SCRIPT_URL + '?action=emp&code=' + encodeURIComponent(code));
+    var d = await res.json();
+    if (d.found) {
+      empData = d;
+      nb.textContent = '✓ ' + d.name + ' (' + (d.branch||'') + ' / ' + (d.department||'') + ')';
+      nb.style.color = '#27AE60';
+      var bs = document.getElementById('branchSel');
+      if (d.branch) bs.value = d.branch;               // เติมสาขาให้อัตโนมัติ
+    } else {
+      empData = null;
+      nb.textContent = '✗ ไม่พบรหัสพนักงานนี้ในระบบ';
+      nb.style.color = '#E53935';
+    }
+  } catch (e) {
+    empData = null;
+    nb.textContent = '✗ ค้นหาไม่สำเร็จ ลองใหม่';
+    nb.style.color = '#E53935';
+  }
+}
 
 function addDept() {
   const sel = document.getElementById('deptSel');
@@ -313,6 +351,7 @@ function updateDeptLabel() {
 async function submitRegister() {
   const branch = document.getElementById('branchSel').value;
   const dept   = selectedDepts.join(', ');
+  if (!empData)  { showMsg('กรุณากรอกรหัสพนักงานที่ถูกต้องก่อน', 'error'); return; }
   if (!branch) { showMsg('กรุณาเลือกสาขา', 'error'); return; }
   if (selectedDepts.length === 0) { showMsg('กรุณาเพิ่มอย่างน้อย 1 แผนก (กด ➕ เพิ่ม)', 'error'); return; }
 
@@ -326,7 +365,8 @@ async function submitRegister() {
       body   : new URLSearchParams({ payload: JSON.stringify({
         type        : 'registerManager',
         userId      : myUserId,
-        displayName : myDisplayName,
+        displayName : empData.name,
+        employeeId  : document.getElementById('empId').value.trim(),
         branch      : branch,
         department  : dept
       }) })
