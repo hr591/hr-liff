@@ -88,8 +88,9 @@
   <div id="backCard" class="card" style="margin-bottom:0; display:none;">
     <div class="form-title">🔙 คุณมีรายการออกนอกบริษัทที่ยังไม่ปิด</div>
     <div id="openInfo" class="openbox"></div>
+    <div id="backGate" style="display:none;padding:14px;border-radius:10px;text-align:center;font-size:14px;margin-top:6px;line-height:1.6;"></div>
     <button class="btn btn-back" id="btnBack" onclick="startBack()">✅ กลับเข้าบริษัทแล้ว (ถ่ายรูป+จับพิกัด)</button>
-    <div class="gpsNote">📸 กดแล้วกล้องจะเปิดให้ <b>ถ่ายสดเท่านั้น</b> (เลือกรูปเก่าไม่ได้) + จับพิกัด GPS อัตโนมัติ</div>
+    <div class="gpsNote" id="backNote">📸 กดแล้วกล้องจะเปิดให้ <b>ถ่ายสดเท่านั้น</b> (เลือกรูปเก่าไม่ได้) + จับพิกัด GPS อัตโนมัติ</div>
   </div>
 
   <div id="camModal" style="display:none;position:fixed;inset:0;background:#000;z-index:9999;flex-direction:column;align-items:center;justify-content:center;">
@@ -174,6 +175,25 @@ function showBackMode(d) {
     '⏰ ออกเวลา: <b>' + fmtHM(d.timeOut) + '</b> · กลับ(ประมาณ): <b>' + fmtHM(d.timeBack) + '</b><br>' +
     '📝 เหตุผล: ' + (d.reason||'-') + '<br>' +
     '📌 สถานะ: <b>' + (d.status||'-') + '</b>';
+
+  // ล็อกปุ่มกลับ: กดได้เฉพาะเมื่อหัวหน้าอนุมัติแล้ว
+  var st = String(d.status||'').trim();
+  var approved = (st==='อนุมัติ' || st==='อนุมัติแบบมีเงื่อนไข' || st==='รับทราบ');
+  var rejected = (st==='ไม่อนุมัติ' || st==='ปฏิเสธ');
+  var btn = document.getElementById('btnBack');
+  var note = document.getElementById('backNote');
+  var gate = document.getElementById('backGate');
+  if (approved) {
+    btn.style.display = 'block'; note.style.display = 'block'; gate.style.display = 'none';
+  } else if (rejected) {
+    btn.style.display = 'none'; note.style.display = 'none';
+    gate.style.display = 'block'; gate.style.background = '#fdecea'; gate.style.color = '#c62828';
+    gate.innerHTML = '❌ หัวหน้าไม่อนุมัติคำขอนี้<br><small>กดกลับไม่ได้ — หากต้องการออก กรุณาส่งคำขอใหม่</small>';
+  } else {
+    btn.style.display = 'none'; note.style.display = 'none';
+    gate.style.display = 'block'; gate.style.background = '#fff7e6'; gate.style.color = '#b26a00';
+    gate.innerHTML = '⏳ รอหัวหน้าอนุมัติ<br><small>เมื่อหัวหน้าอนุมัติแล้ว จึงจะกด “กลับเข้าบริษัท” ได้</small>';
+  }
 }
 
 function onEmpInput() {
