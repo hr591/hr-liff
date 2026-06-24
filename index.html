@@ -77,6 +77,10 @@
     <div class="form-group"><label>เหตุผล <span class="req">*</span></label><textarea id="fReason" placeholder="ระบุเหตุผลการขอกลับก่อนเวลา เช่น นัดหมอ, ธุระครอบครัว..."></textarea></div>
     <button class="btn-submit" id="btnSubmit" onclick="submitForm()">📤 ส่งคำขอ</button>
   </div>
+  <div id="myReqCard" class="card" style="margin-top:14px;">
+    <div class="form-title">📜 คำขอของฉัน</div>
+    <div id="myReqList" style="font-size:13px;color:#888;">กำลังโหลด...</div>
+  </div>
   <div id="successScreen">
     <div class="success-icon">✅</div>
     <div class="success-title">ส่งคำขอสำเร็จ!</div>
@@ -111,6 +115,7 @@ async function initApp() {
     document.getElementById('userAvatar').src = profile.pictureUrl || '';
     document.getElementById('fDate').value = new Date().toISOString().slice(0, 10);
     loadStats(profile.userId);
+    loadMyRequests();
     document.getElementById('loadingScreen').style.display = 'none';
     document.getElementById('mainApp').style.display = 'block';
   } catch (err) {
@@ -220,6 +225,7 @@ async function submitForm() {
     document.getElementById('formCard').style.display = 'none';
     document.querySelector('.stats-row').style.display = 'none';
     document.querySelector('.user-card').parentElement.style.display = 'none';
+    document.getElementById('myReqCard').style.display = 'none';
     document.getElementById('successScreen').style.display = 'block';
     setTimeout(function () { try { liff.closeWindow(); } catch (_) {} }, 3000);
   } catch (err) {
@@ -227,6 +233,36 @@ async function submitForm() {
     btn.disabled = false; btn.textContent = '📤 ส่งคำขอ';
   }
 }
+async function loadMyRequests() {
+  const box = document.getElementById('myReqList');
+  try {
+    const res = await fetch(SCRIPT_URL + '?action=myreq&userId=' + encodeURIComponent(profile.userId));
+    const d = await res.json();
+    const items = (d && d.items) || [];
+    if (!items.length) { box.innerHTML = '<div style="color:#aaa;">— ยังไม่มีคำขอ —</div>'; return; }
+    box.innerHTML = items.map(function(it){
+      var ok = (it.status==='อนุมัติ'||it.status==='รับทราบ'||it.status==='อนุมัติแบบมีเงื่อนไข');
+      var no = (it.status==='ไม่อนุมัติ'||it.status==='ปฏิเสธ');
+      var color = ok ? '#27AE60' : (no ? '#E53935' : '#F39C12');
+      var cancelBtn = it.canCancel ? '<button onclick="cancelReq(\'' + it.id + '\')" style="margin-top:7px;padding:6px 13px;background:#fff;color:#E53935;border:1.5px solid #E53935;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">🗑️ ยกเลิกคำขอ</button>' : '';
+      return '<div style="padding:11px 0;border-bottom:1px solid #F0F0F0;">'
+        + '<div style="font-weight:700;color:#333;">' + it.type + '</div>'
+        + '<div style="color:#888;margin-top:3px;">📅 ' + it.date + ' · สถานะ: <b style="color:' + color + ';">' + it.status + '</b></div>'
+        + cancelBtn + '</div>';
+    }).join('');
+  } catch(e) { box.innerHTML = '<div style="color:#E53935;">โหลดรายการไม่สำเร็จ</div>'; }
+}
+
+async function cancelReq(id) {
+  if (!confirm('ยืนยันยกเลิกคำขอนี้?\n(ยกเลิกได้เฉพาะที่ยังรออนุมัติ)')) return;
+  try {
+    const res = await fetch(SCRIPT_URL + '?action=cancelreq&id=' + encodeURIComponent(id) + '&userId=' + encodeURIComponent(profile.userId));
+    const d = await res.json();
+    if (d && d.ok) { alert('✅ ยกเลิกคำขอเรียบร้อยแล้ว'); loadMyRequests(); loadStats(profile.userId); }
+    else { alert('❌ ยกเลิกไม่สำเร็จ: ' + ((d && d.error) || 'ไม่ทราบสาเหตุ')); loadMyRequests(); }
+  } catch(e) { alert('❌ เกิดข้อผิดพลาด ลองใหม่อีกครั้ง'); }
+}
+
 initApp();
 </script>
 </body>
