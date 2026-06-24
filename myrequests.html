@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<script>
+(function(){ try{
+  var P='line-scdn.net'; var OF=window.fetch;
+  if(OF){ window.fetch=function(u,o){ try{ var s=(u&&u.url)?u.url:(''+u); if(s.indexOf(P)!==-1){ o=Object.assign({},o,{cache:'no-store'}); } }catch(e){} return OF.call(this,u,o); }; }
+  var XO=XMLHttpRequest.prototype.open;
+  XMLHttpRequest.prototype.open=function(m,url){ try{ if(typeof url==='string'&&url.indexOf(P)!==-1){ url+=(url.indexOf('?')===-1?'?':'&')+'_n='+Date.now(); arguments[1]=url; } }catch(e){} return XO.apply(this,arguments); };
+}catch(e){} })();
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>คำขอของฉัน</title>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system,'Prompt','Noto Sans Thai',sans-serif; background: #EEF2F7; min-height: 100vh; color: #1A1A2E; }
+  .header { background: linear-gradient(135deg,#6C3483 0%,#4A235A 100%); color:#fff; padding: 22px 16px 18px; text-align:center; position:sticky; top:0; z-index:10; box-shadow:0 2px 12px rgba(108,52,131,.3); }
+  .header h1 { font-size:17px; font-weight:700; }
+  .header sub { font-size:11px; opacity:.85; display:block; margin-top:3px; }
+  .user-card { display:flex; align-items:center; gap:13px; background:#fff; border-radius:14px; padding:14px; margin:14px 14px 0; box-shadow:0 2px 10px rgba(0,0,0,.07); }
+  .avatar { width:46px; height:46px; border-radius:50%; object-fit:cover; border:2.5px solid #EDE7F6; background:#EDE7F6; }
+  .user-name { font-size:15px; font-weight:700; }
+  .tabs { display:flex; gap:8px; margin:14px 14px 0; }
+  .tab { flex:1; padding:9px 4px; text-align:center; font-size:12px; font-weight:700; border-radius:10px; background:#fff; color:#888; border:1.5px solid #E3E8F0; cursor:pointer; }
+  .tab.active { background:#6C3483; color:#fff; border-color:#6C3483; }
+  .list { margin:14px 14px 0; }
+  .item { background:#fff; border-radius:13px; padding:14px 16px; margin-bottom:11px; box-shadow:0 2px 8px rgba(0,0,0,.06); border-left:5px solid #ccc; }
+  .item.s-ok { border-left-color:#27AE60; }
+  .item.s-no { border-left-color:#E53935; }
+  .item.s-wait { border-left-color:#F39C12; }
+  .item-top { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  .item-type { font-size:14px; font-weight:800; color:#333; }
+  .badge { font-size:11px; font-weight:700; border-radius:20px; padding:3px 11px; white-space:nowrap; }
+  .badge.s-ok { background:#E8F5E9; color:#27AE60; }
+  .badge.s-no { background:#FDECEA; color:#E53935; }
+  .badge.s-wait { background:#FFF7E6; color:#E67E22; }
+  .item-sub { font-size:12.5px; color:#888; margin-top:6px; }
+  .btn-cancel { margin-top:10px; padding:8px 15px; background:#fff; color:#E53935; border:1.5px solid #E53935; border-radius:9px; font-size:12.5px; font-weight:700; cursor:pointer; font-family:inherit; }
+  .btn-cancel:active { opacity:.8; }
+  .empty { text-align:center; color:#aaa; padding:50px 20px; font-size:14px; }
+  #loadingScreen { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; gap:14px; color:#888; font-size:14px; }
+  .spinner { width:36px; height:36px; border:3px solid #EDE7F6; border-top-color:#6C3483; border-radius:50%; animation:spin .8s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .reload { display:block; width:calc(100% - 28px); margin:6px 14px 24px; padding:12px; background:#EDE7F6; color:#6C3483; border:none; border-radius:11px; font-size:14px; font-weight:700; font-family:inherit; cursor:pointer; }
+</style>
+</head>
+<body>
+<div id="loadingScreen"><div class="spinner"></div><span>กำลังโหลด...</span></div>
+<div id="mainApp" style="display:none;">
+  <div class="header"><h1>📜 คำขอของฉัน</h1><sub>ดูสถานะ + ยกเลิกคำขอทั้ง 3 ประเภท</sub></div>
+  <div class="user-card">
+    <img id="userAvatar" class="avatar" src="" alt="">
+    <div><div id="userName" class="user-name">—</div><div style="font-size:11px;color:#999;margin-top:2px;">รายการคำขอล่าสุด</div></div>
+  </div>
+  <div class="tabs">
+    <div class="tab active" data-f="all" onclick="setFilter('all')">ทั้งหมด</div>
+    <div class="tab" data-f="wait" onclick="setFilter('wait')">รออนุมัติ</div>
+    <div class="tab" data-f="ok" onclick="setFilter('ok')">อนุมัติ</div>
+    <div class="tab" data-f="no" onclick="setFilter('no')">ไม่อนุมัติ</div>
+  </div>
+  <div id="list" class="list"></div>
+  <button class="reload" onclick="loadMyRequests()">🔄 รีเฟรช</button>
+</div>
+<script>
+const LIFF_ID    = '2010455823-nKVI0u9i';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyUmPxiU96nNIC06qeki8Nqu7rv2Fk3zM_UzYVGpkL9EshQzIzVSjza0q74koSkUtHxzg/exec';
+let profile = null, allItems = [], curFilter = 'all';
+
+async function initApp() {
+  try {
+    if (typeof liff === 'undefined') throw new Error('LIFF SDK ไม่โหลด');
+    await Promise.race([
+      liff.init({ liffId: LIFF_ID }),
+      new Promise(function(_,rej){ setTimeout(function(){ rej(new Error('Timeout: liff.init 10s')); }, 10000); })
+    ]);
+    if (!liff.isLoggedIn()) { liff.login({ redirectUri: location.href }); return; }
+    profile = await liff.getProfile();
+    document.getElementById('userName').textContent = profile.displayName;
+    document.getElementById('userAvatar').src = profile.pictureUrl || '';
+    await loadMyRequests();
+    document.getElementById('loadingScreen').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'block';
+  } catch (err) {
+    document.getElementById('loadingScreen').innerHTML = '<div style="color:#E53935;font-size:13px;text-align:center;padding:20px;">✗ เกิดข้อผิดพลาด<br><small>' + (err && err.message || err) + '</small></div>';
+  }
+}
+
+function cls(status) {
+  if (status==='อนุมัติ'||status==='รับทราบ'||status==='อนุมัติแบบมีเงื่อนไข') return 'ok';
+  if (status==='ไม่อนุมัติ'||status==='ปฏิเสธ') return 'no';
+  return 'wait';
+}
+
+async function loadMyRequests() {
+  const box = document.getElementById('list');
+  box.innerHTML = '<div class="empty">⏳ กำลังโหลด...</div>';
+  try {
+    const res = await fetch(SCRIPT_URL + '?action=myreq&userId=' + encodeURIComponent(profile.userId));
+    const d = await res.json();
+    allItems = (d && d.items) || [];
+    render();
+  } catch (e) { box.innerHTML = '<div class="empty">❌ โหลดรายการไม่สำเร็จ ลองรีเฟรช</div>'; }
+}
+
+function setFilter(f) {
+  curFilter = f;
+  document.querySelectorAll('.tab').forEach(function(t){ t.classList.toggle('active', t.getAttribute('data-f')===f); });
+  render();
+}
+
+function render() {
+  const box = document.getElementById('list');
+  let items = allItems.filter(function(it){ return curFilter==='all' || cls(it.status)===curFilter; });
+  if (!items.length) { box.innerHTML = '<div class="empty">— ไม่มีรายการ —</div>'; return; }
+  box.innerHTML = items.map(function(it){
+    var c = cls(it.status);
+    var cancel = it.canCancel ? '<button class="btn-cancel" onclick="cancelReq(\'' + it.id + '\')">🗑️ ยกเลิกคำขอ</button>' : '';
+    return '<div class="item s-' + c + '">'
+      + '<div class="item-top"><div class="item-type">' + it.type + '</div>'
+      + '<div class="badge s-' + c + '">' + it.status + '</div></div>'
+      + '<div class="item-sub">📅 ' + it.date + ' &nbsp;·&nbsp; รหัส: ' + it.id + '</div>'
+      + cancel + '</div>';
+  }).join('');
+}
+
+async function cancelReq(id) {
+  if (!confirm('ยืนยันยกเลิกคำขอนี้?\n(ยกเลิกได้เฉพาะที่ยังรออนุมัติ)')) return;
+  try {
+    const res = await fetch(SCRIPT_URL + '?action=cancelreq&id=' + encodeURIComponent(id) + '&userId=' + encodeURIComponent(profile.userId));
+    const d = await res.json();
+    if (d && d.ok) { alert('✅ ยกเลิกคำขอเรียบร้อยแล้ว'); loadMyRequests(); }
+    else { alert('❌ ยกเลิกไม่สำเร็จ: ' + ((d && d.error) || 'ไม่ทราบสาเหตุ')); loadMyRequests(); }
+  } catch (e) { alert('❌ เกิดข้อผิดพลาด ลองใหม่อีกครั้ง'); }
+}
+
+initApp();
+</script>
+</body>
+</html>
