@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>อนุมัติคำขอ — หัวหน้า</title>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system,'Prompt','Noto Sans Thai',sans-serif; background: #EEF2F7; min-height: 100vh; color: #1A1A2E; }
+  .header { background: linear-gradient(135deg,#6C3483 0%,#4A235A 100%); color:#fff; padding: 22px 16px 18px; text-align:center; position:sticky; top:0; z-index:10; box-shadow:0 2px 12px rgba(108,52,131,.3); }
+  .header h1 { font-size:17px; font-weight:700; }
+  .header sub { font-size:11px; opacity:.85; display:block; margin-top:3px; }
+  .user-card { display:flex; align-items:center; gap:13px; background:#fff; border-radius:14px; padding:14px; margin:14px 14px 0; box-shadow:0 2px 10px rgba(0,0,0,.07); }
+  .avatar { width:46px; height:46px; border-radius:50%; object-fit:cover; border:2.5px solid #EDE7F6; background:#EDE7F6; }
+  .user-name { font-size:15px; font-weight:700; }
+  .bar { display:flex; gap:8px; margin:14px 14px 0; align-items:center; }
+  .count { flex:1; font-size:13px; font-weight:700; color:#6C3483; }
+  .btn { padding:9px 14px; border:none; border-radius:10px; font-size:13px; font-weight:700; font-family:inherit; cursor:pointer; }
+  .btn-all { background:#27AE60; color:#fff; }
+  .btn-all:disabled { background:#cdd5dd; }
+  .list { margin:12px 14px 0; }
+  .item { background:#fff; border-radius:13px; padding:14px 16px; margin-bottom:11px; box-shadow:0 2px 8px rgba(0,0,0,.06); border-left:5px solid #F39C12; }
+  .item-top { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  .item-type { font-size:14px; font-weight:800; color:#6C3483; }
+  .item-name { font-size:14px; font-weight:700; }
+  .item-sub { font-size:12.5px; color:#777; margin-top:5px; line-height:1.55; }
+  .acts { display:flex; gap:9px; margin-top:11px; }
+  .acts .btn { flex:1; }
+  .ok { background:#27AE60; color:#fff; }
+  .no { background:#fff; color:#E53935; border:1.5px solid #E53935; }
+  .empty { text-align:center; color:#aaa; padding:46px 20px; font-size:14px; }
+  .deleg { background:#fff; border-radius:14px; margin:18px 14px 6px; padding:15px 16px; box-shadow:0 2px 10px rgba(0,0,0,.07); }
+  .deleg h3 { font-size:14px; color:#6C3483; margin-bottom:4px; }
+  .deleg p.note { font-size:11.5px; color:#999; margin-bottom:11px; }
+  .field { margin-bottom:11px; }
+  .field label { display:block; font-size:12px; font-weight:700; color:#555; margin-bottom:5px; }
+  .field input, .field select { width:100%; padding:10px 12px; border:1.5px solid #E3E8F0; border-radius:9px; font-size:14px; font-family:inherit; background:#fff; }
+  .drow { display:flex; gap:9px; }
+  .drow .btn { flex:1; }
+  .btn-save { background:#6C3483; color:#fff; }
+  .btn-clear { background:#fff; color:#888; border:1.5px solid #ccc; }
+  .deleg-status { font-size:12px; font-weight:700; padding:8px 11px; border-radius:8px; margin-bottom:11px; }
+  .deleg-on { background:#FFF7E6; color:#E67E22; }
+  .deleg-off { background:#F0F4F8; color:#888; }
+  #loadingScreen { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; gap:14px; color:#888; font-size:14px; }
+  .spinner { width:36px; height:36px; border:3px solid #EDE7F6; border-top-color:#6C3483; border-radius:50%; animation:spin .8s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .reload { display:block; width:calc(100% - 28px); margin:14px 14px 26px; padding:12px; background:#EDE7F6; color:#6C3483; border:none; border-radius:11px; font-size:14px; font-weight:700; font-family:inherit; cursor:pointer; }
+</style>
+</head>
+<body>
+<div id="loadingScreen"><div class="spinner"></div><span>กำลังโหลด...</span></div>
+<div id="mainApp" style="display:none;">
+  <div class="header"><h1>✅ อนุมัติคำขอ (หัวหน้า)</h1><sub>รออนุมัติทั้งหมด · อนุมัติทีละรายการ/ทั้งหมด</sub></div>
+  <div class="user-card">
+    <img id="userAvatar" class="avatar" src="" alt="">
+    <div><div id="userName" class="user-name">—</div><div style="font-size:11px;color:#999;margin-top:2px;">ผู้อนุมัติ</div></div>
+  </div>
+  <div class="bar">
+    <div id="count" class="count">รออนุมัติ 0 รายการ</div>
+    <button id="btnAll" class="btn btn-all" onclick="approveAll()">✅ อนุมัติทั้งหมด</button>
+  </div>
+  <div id="list" class="list"></div>
+
+  <div class="deleg">
+    <h3>🏖️ ฉันไม่อยู่ / ตั้งผู้อนุมัติแทน</h3>
+    <p class="note">เวลาคุณลา/ไม่สะดวก ระบบจะส่งคำขอให้ "ผู้อนุมัติแทน" แทนคุณจนถึงวันที่กำหนด</p>
+    <div id="delegStatus" class="deleg-status deleg-off">ยังไม่ได้ตั้งผู้อนุมัติแทน</div>
+    <div class="field">
+      <label>ผู้อนุมัติแทน</label>
+      <select id="backup"><option value="">— ไม่มอบหมาย —</option></select>
+    </div>
+    <div class="field">
+      <label>ใช้ถึงวันที่ (รวมวันนี้)</label>
+      <input type="date" id="until">
+    </div>
+    <div class="drow">
+      <button class="btn btn-save" onclick="saveDelegate()">💾 บันทึก</button>
+      <button class="btn btn-clear" onclick="clearDelegate()">ยกเลิกมอบหมาย</button>
+    </div>
+  </div>
+
+  <button class="reload" onclick="loadAll()">🔄 รีเฟรช</button>
+</div>
+<script>
+const LIFF_ID    = '2010455823-ANmwSg0K';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyUmPxiU96nNIC06qeki8Nqu7rv2Fk3zM_UzYVGpkL9EshQzIzVSjza0q74koSkUtHxzg/exec';
+let profile = null, pending = [];
+
+async function initApp() {
+  try {
+    if (typeof liff === 'undefined') throw new Error('LIFF SDK ไม่โหลด');
+    await Promise.race([
+      liff.init({ liffId: LIFF_ID }),
+      new Promise(function(_,rej){ setTimeout(function(){ rej(new Error('Timeout: liff.init 10s')); }, 10000); })
+    ]);
+    if (!liff.isLoggedIn()) { liff.login({ redirectUri: location.href }); return; }
+    profile = await liff.getProfile();
+    document.getElementById('userName').textContent = profile.displayName;
+    document.getElementById('userAvatar').src = profile.pictureUrl || '';
+    await loadAll();
+    document.getElementById('loadingScreen').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'block';
+  } catch (err) {
+    document.getElementById('loadingScreen').innerHTML = '<div style="color:#E53935;font-size:13px;text-align:center;padding:20px;">✗ เกิดข้อผิดพลาด<br><small>' + (err && err.message || err) + '</small></div>';
+  }
+}
+
+async function loadAll() {
+  await Promise.all([loadPending(), loadDelegate()]);
+}
+
+async function loadPending() {
+  const box = document.getElementById('list');
+  box.innerHTML = '<div class="empty">⏳ กำลังโหลด...</div>';
+  try {
+    const res = await fetch(SCRIPT_URL + '?action=pending&userId=' + encodeURIComponent(profile.userId));
+    const d = await res.json();
+    pending = (d && d.items) || [];
+    renderPending();
+  } catch (e) { box.innerHTML = '<div class="empty">❌ โหลดรายการไม่สำเร็จ ลองรีเฟรช</div>'; }
+}
+
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+
+function renderPending() {
+  const box = document.getElementById('list');
+  document.getElementById('count').textContent = 'รออนุมัติ ' + pending.length + ' รายการ';
+  document.getElementById('btnAll').disabled = pending.length === 0;
+  if (!pending.length) { box.innerHTML = '<div class="empty">🎉 ไม่มีคำขอค้างอนุมัติ</div>'; return; }
+  box.innerHTML = pending.map(function(it){
+    var sub = '👤 <b>' + esc(it.name||'-') + '</b> &nbsp;·&nbsp; ' + esc(it.branch||'') + (it.dept?(' / '+esc(it.dept)):'')
+      + '<br>📅 ' + esc(it.date||'-') + (it.time?(' &nbsp;·&nbsp; ⏰ '+esc(it.time)):'')
+      + (it.reason?('<br>📝 '+esc(it.reason)):'');
+    return '<div class="item" id="it-' + esc(it.id) + '">'
+      + '<div class="item-top"><div class="item-type">' + esc(it.type) + '</div></div>'
+      + '<div class="item-sub">' + sub + '</div>'
+      + '<div class="acts">'
+      + '<button class="btn ok" onclick="decide(\'' + esc(it.id) + '\',\'approve\')">✅ อนุมัติ</button>'
+      + '<button class="btn no" onclick="decide(\'' + esc(it.id) + '\',\'reject\')">❌ ไม่อนุมัติ</button>'
+      + '</div></div>';
+  }).join('');
+}
+
+async function decide(id, decision) {
+  if (decision==='reject' && !confirm('ยืนยัน "ไม่อนุมัติ" คำขอนี้?')) return;
+  const el = document.getElementById('it-'+id);
+  if (el) el.style.opacity = '.5';
+  try {
+    const res = await fetch(SCRIPT_URL + '?action=dashDecide&id=' + encodeURIComponent(id) + '&userId=' + encodeURIComponent(profile.userId) + '&decision=' + decision);
+    const d = await res.json();
+    if (d && d.ok) {
+      pending = pending.filter(function(x){ return x.id !== id; });
+      renderPending();
+    } else {
+      alert('❌ ' + ((d && d.error) || 'ไม่สำเร็จ'));
+      if (el) el.style.opacity = '1';
+      loadPending();
+    }
+  } catch (e) { alert('❌ เกิดข้อผิดพลาด ลองใหม่'); if (el) el.style.opacity = '1'; }
+}
+
+async function approveAll() {
+  if (!pending.length) return;
+  if (!confirm('อนุมัติทั้งหมด ' + pending.length + ' รายการ?')) return;
+  document.getElementById('btnAll').disabled = true;
+  const ids = pending.map(function(x){ return x.id; });
+  for (var i=0;i<ids.length;i++){
+    try {
+      await fetch(SCRIPT_URL + '?action=dashDecide&id=' + encodeURIComponent(ids[i]) + '&userId=' + encodeURIComponent(profile.userId) + '&decision=approve');
+    } catch(e) {}
+  }
+  alert('✅ อนุมัติเรียบร้อย');
+  loadPending();
+}
+
+async function loadDelegate() {
+  try {
+    const res = await fetch(SCRIPT_URL + '?action=myDelegate&userId=' + encodeURIComponent(profile.userId));
+    const d = await res.json();
+    if (!d || !d.ok) return;
+    const sel = document.getElementById('backup');
+    sel.innerHTML = '<option value="">— ไม่มอบหมาย —</option>' + (d.candidates||[]).map(function(c){
+      return '<option value="' + esc(c.userId) + '">' + esc(c.name) + (c.branch?(' ('+esc(c.branch)+')'):'') + '</option>';
+    }).join('');
+    if (d.backup) sel.value = d.backup;
+    if (d.until) document.getElementById('until').value = d.until;
+    const st = document.getElementById('delegStatus');
+    var today = new Date().toISOString().slice(0,10);
+    if (d.backup && d.until && d.until >= today) {
+      st.className = 'deleg-status deleg-on';
+      st.textContent = '🟠 กำลังมอบหมายให้ผู้อื่นอนุมัติแทน ถึง ' + d.until;
+    } else {
+      st.className = 'deleg-status deleg-off';
+      st.textContent = 'ยังไม่ได้ตั้งผู้อนุมัติแทน (คุณรับคำขอเองตามปกติ)';
+    }
+  } catch (e) {}
+}
+
+async function saveDelegate() {
+  const backup = document.getElementById('backup').value;
+  const until  = document.getElementById('until').value;
+  if (backup && !until) { alert('กรุณาเลือกวันที่ "ใช้ถึง"'); return; }
+  if (until && !backup) { alert('กรุณาเลือกผู้อนุมัติแทน'); return; }
+  try {
+    const res = await fetch(SCRIPT_URL + '?action=setDelegate&userId=' + encodeURIComponent(profile.userId) + '&until=' + encodeURIComponent(until) + '&backup=' + encodeURIComponent(backup));
+    const d = await res.json();
+    if (d && d.ok) { alert('💾 บันทึกการมอบหมายแล้ว'); loadDelegate(); }
+    else { alert('❌ ' + ((d && d.error) || 'ไม่สำเร็จ')); }
+  } catch (e) { alert('❌ เกิดข้อผิดพลาด'); }
+}
+
+async function clearDelegate() {
+  document.getElementById('backup').value = '';
+  document.getElementById('until').value = '';
+  try {
+    const res = await fetch(SCRIPT_URL + '?action=setDelegate&userId=' + encodeURIComponent(profile.userId) + '&until=&backup=');
+    const d = await res.json();
+    if (d && d.ok) { alert('ยกเลิกการมอบหมายแล้ว'); loadDelegate(); }
+  } catch (e) {}
+}
+
+initApp();
+</script>
+</body>
+</html>
