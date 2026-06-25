@@ -66,24 +66,6 @@
   </div>
   <div id="list" class="list"></div>
 
-  <div class="deleg">
-    <h3>🏖️ ฉันไม่อยู่ / ตั้งผู้อนุมัติแทน</h3>
-    <p class="note">เวลาคุณลา/ไม่สะดวก ระบบจะส่งคำขอให้ "ผู้อนุมัติแทน" แทนคุณจนถึงวันที่กำหนด</p>
-    <div id="delegStatus" class="deleg-status deleg-off">ยังไม่ได้ตั้งผู้อนุมัติแทน</div>
-    <div class="field">
-      <label>ผู้อนุมัติแทน</label>
-      <select id="backup"><option value="">— ไม่มอบหมาย —</option></select>
-    </div>
-    <div class="field">
-      <label>ใช้ถึงวันที่ (รวมวันนี้)</label>
-      <input type="date" id="until">
-    </div>
-    <div class="drow">
-      <button class="btn btn-save" onclick="saveDelegate()">💾 บันทึก</button>
-      <button class="btn btn-clear" onclick="clearDelegate()">ยกเลิกมอบหมาย</button>
-    </div>
-  </div>
-
   <button class="reload" onclick="loadAll()">🔄 รีเฟรช</button>
 </div>
 <script>
@@ -111,7 +93,7 @@ async function initApp() {
 }
 
 async function loadAll() {
-  await Promise.all([loadPending(), loadDelegate()]);
+  await loadPending();
 }
 
 async function loadPending() {
@@ -176,52 +158,6 @@ async function approveAll() {
   }
   alert('✅ อนุมัติเรียบร้อย');
   loadPending();
-}
-
-async function loadDelegate() {
-  try {
-    const res = await fetch(SCRIPT_URL + '?action=myDelegate&userId=' + encodeURIComponent(profile.userId));
-    const d = await res.json();
-    if (!d || !d.ok) return;
-    const sel = document.getElementById('backup');
-    sel.innerHTML = '<option value="">— ไม่มอบหมาย —</option>' + (d.candidates||[]).map(function(c){
-      return '<option value="' + esc(c.userId) + '">' + esc(c.name) + (c.branch?(' ('+esc(c.branch)+')'):'') + '</option>';
-    }).join('');
-    if (d.backup) sel.value = d.backup;
-    if (d.until) document.getElementById('until').value = d.until;
-    const st = document.getElementById('delegStatus');
-    var today = new Date().toISOString().slice(0,10);
-    if (d.backup && d.until && d.until >= today) {
-      st.className = 'deleg-status deleg-on';
-      st.textContent = '🟠 กำลังมอบหมายให้ผู้อื่นอนุมัติแทน ถึง ' + d.until;
-    } else {
-      st.className = 'deleg-status deleg-off';
-      st.textContent = 'ยังไม่ได้ตั้งผู้อนุมัติแทน (คุณรับคำขอเองตามปกติ)';
-    }
-  } catch (e) {}
-}
-
-async function saveDelegate() {
-  const backup = document.getElementById('backup').value;
-  const until  = document.getElementById('until').value;
-  if (backup && !until) { alert('กรุณาเลือกวันที่ "ใช้ถึง"'); return; }
-  if (until && !backup) { alert('กรุณาเลือกผู้อนุมัติแทน'); return; }
-  try {
-    const res = await fetch(SCRIPT_URL + '?action=setDelegate&userId=' + encodeURIComponent(profile.userId) + '&until=' + encodeURIComponent(until) + '&backup=' + encodeURIComponent(backup));
-    const d = await res.json();
-    if (d && d.ok) { alert('💾 บันทึกการมอบหมายแล้ว'); loadDelegate(); }
-    else { alert('❌ ' + ((d && d.error) || 'ไม่สำเร็จ')); }
-  } catch (e) { alert('❌ เกิดข้อผิดพลาด'); }
-}
-
-async function clearDelegate() {
-  document.getElementById('backup').value = '';
-  document.getElementById('until').value = '';
-  try {
-    const res = await fetch(SCRIPT_URL + '?action=setDelegate&userId=' + encodeURIComponent(profile.userId) + '&until=&backup=');
-    const d = await res.json();
-    if (d && d.ok) { alert('ยกเลิกการมอบหมายแล้ว'); loadDelegate(); }
-  } catch (e) {}
 }
 
 initApp();
