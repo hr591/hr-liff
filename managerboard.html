@@ -46,6 +46,17 @@
   .deleg-status { font-size:12px; font-weight:700; padding:8px 11px; border-radius:8px; margin-bottom:11px; }
   .deleg-on { background:#FFF7E6; color:#E67E22; }
   .deleg-off { background:#F0F4F8; color:#888; }
+  .tabs { display:flex; gap:8px; margin:14px 14px 0; }
+  .tab { flex:1; padding:10px; border:none; border-radius:11px; font-size:13.5px; font-weight:700; font-family:inherit; cursor:pointer; background:#EDE7F6; color:#6C3483; }
+  .tab.active { background:#6C3483; color:#fff; box-shadow:0 2px 8px rgba(108,52,131,.3); }
+  .search { margin:12px 14px 0; position:relative; }
+  .search input { width:100%; padding:11px 14px 11px 40px; border:1.5px solid #E3E8F0; border-radius:11px; font-size:14px; font-family:inherit; background:#fff; }
+  .search::before { content:'🔍'; position:absolute; left:14px; top:50%; transform:translateY(-50%); font-size:15px; }
+  .badge { font-size:11.5px; font-weight:800; padding:3px 9px; border-radius:20px; white-space:nowrap; }
+  .b-ok { background:#E8F8EE; color:#1E8449; }
+  .b-no { background:#FDEDEC; color:#C0392B; }
+  .item.hist-ok { border-left-color:#27AE60; }
+  .item.hist-no { border-left-color:#E53935; }
   #loadingScreen { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; gap:14px; color:#888; font-size:14px; }
   .spinner { width:36px; height:36px; border:3px solid #EDE7F6; border-top-color:#6C3483; border-radius:50%; animation:spin .8s linear infinite; }
   @keyframes spin { to { transform:rotate(360deg); } }
@@ -60,6 +71,11 @@
     <img id="userAvatar" class="avatar" src="" alt="">
     <div><div id="userName" class="user-name">—</div><div style="font-size:11px;color:#999;margin-top:2px;">ผู้อนุมัติ</div></div>
   </div>
+  <div class="tabs">
+    <button id="tabPending" class="tab active" onclick="switchTab('pending')">📋 รออนุมัติ</button>
+    <button id="tabHistory" class="tab" onclick="switchTab('history')">🕘 ประวัติ</button>
+  </div>
+  <div class="search"><input id="searchBox" type="text" placeholder="ค้นหา ชื่อ / ประเภท / สาขา / แผนก" oninput="applyFilter()"></div>
   <div class="bar">
     <div id="count" class="count">รออนุมัติ 0 รายการ</div>
     <button id="btnAll" class="btn btn-all" onclick="approveAll()">✅ อนุมัติทั้งหมด</button>
@@ -71,7 +87,7 @@
 <script>
 const LIFF_ID    = '2010455823-ANmwSg0K';
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyUmPxiU96nNIC06qeki8Nqu7rv2Fk3zM_UzYVGpkL9EshQzIzVSjza0q74koSkUtHxzg/exec';
-let profile = null, pending = [];
+let profile = null, pending = [], history = [], curTab = 'pending', query = '', histLoaded = false;
 
 async function initApp() {
   try {
@@ -109,12 +125,36 @@ async function loadPending() {
 
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
 
+function matchQ(it){
+  if (!query) return true;
+  var hay = ((it.type||'')+' '+(it.name||'')+' '+(it.branch||'')+' '+(it.dept||'')+' '+(it.reason||'')).toLowerCase();
+  return hay.indexOf(query.toLowerCase()) >= 0;
+}
+
+function applyFilter(){
+  query = (document.getElementById('searchBox').value || '').trim();
+  renderCurrent();
+}
+
+function switchTab(tab){
+  curTab = tab;
+  document.getElementById('tabPending').classList.toggle('active', tab === 'pending');
+  document.getElementById('tabHistory').classList.toggle('active', tab === 'history');
+  document.getElementById('btnAll').style.display = tab === 'pending' ? '' : 'none';
+  if (tab === 'history' && !histLoaded) { loadHistory(); return; }
+  renderCurrent();
+}
+
+function renderCurrent(){ if (curTab === 'pending') renderPending(); else renderHistory(); }
+
 function renderPending() {
   const box = document.getElementById('list');
   document.getElementById('count').textContent = 'รออนุมัติ ' + pending.length + ' รายการ';
   document.getElementById('btnAll').disabled = pending.length === 0;
   if (!pending.length) { box.innerHTML = '<div class="empty">🎉 ไม่มีคำขอค้างอนุมัติ</div>'; return; }
-  box.innerHTML = pending.map(function(it){
+  var show = pending.filter(matchQ);
+  if (!show.length) { box.innerHTML = '<div class="empty">🔍 ไม่พบรายการที่ค้นหา</div>'; return; }
+  box.innerHTML = show.map(function(it){
     var sub = '👤 <b>' + esc(it.name||'-') + '</b> &nbsp;·&nbsp; ' + esc(it.branch||'') + (it.dept?(' / '+esc(it.dept)):'')
       + '<br>📅 ' + esc(it.date||'-') + (it.time?(' &nbsp;·&nbsp; ⏰ '+esc(it.time)):'')
       + (it.reason?('<br>📝 '+esc(it.reason)):'');
@@ -125,6 +165,37 @@ function renderPending() {
       + '<button class="btn ok" onclick="decide(\'' + esc(it.id) + '\',\'approve\')">✅ อนุมัติ</button>'
       + '<button class="btn no" onclick="decide(\'' + esc(it.id) + '\',\'reject\')">❌ ไม่อนุมัติ</button>'
       + '</div></div>';
+  }).join('');
+}
+
+async function loadHistory(){
+  const box = document.getElementById('list');
+  document.getElementById('count').textContent = 'กำลังโหลดประวัติ...';
+  box.innerHTML = '<div class="empty">⏳ กำลังโหลด...</div>';
+  try {
+    const res = await fetch(SCRIPT_URL + '?action=history&userId=' + encodeURIComponent(profile.userId));
+    const d = await res.json();
+    history = (d && d.items) || [];
+    histLoaded = true;
+    renderHistory();
+  } catch (e) { box.innerHTML = '<div class="empty">❌ โหลดประวัติไม่สำเร็จ ลองรีเฟรช</div>'; }
+}
+
+function renderHistory(){
+  const box = document.getElementById('list');
+  document.getElementById('count').textContent = 'ประวัติ ' + history.length + ' รายการ';
+  if (!history.length) { box.innerHTML = '<div class="empty">— ยังไม่มีประวัติที่ตัดสินแล้ว —</div>'; return; }
+  var show = history.filter(matchQ);
+  if (!show.length) { box.innerHTML = '<div class="empty">🔍 ไม่พบรายการที่ค้นหา</div>'; return; }
+  box.innerHTML = show.map(function(it){
+    var ok = it.status === 'อนุมัติแล้ว';
+    var badge = ok ? '<span class="badge b-ok">✅ อนุมัติแล้ว</span>' : '<span class="badge b-no">❌ ไม่อนุมัติ</span>';
+    var sub = '👤 <b>' + esc(it.name||'-') + '</b> &nbsp;·&nbsp; ' + esc(it.branch||'') + (it.dept?(' / '+esc(it.dept)):'')
+      + '<br>📅 ' + esc(it.date||'-') + (it.time?(' &nbsp;·&nbsp; ⏰ '+esc(it.time)):'')
+      + (it.reason?('<br>📝 '+esc(it.reason)):'');
+    return '<div class="item ' + (ok?'hist-ok':'hist-no') + '">'
+      + '<div class="item-top"><div class="item-type">' + esc(it.type) + '</div>' + badge + '</div>'
+      + '<div class="item-sub">' + sub + '</div></div>';
   }).join('');
 }
 
