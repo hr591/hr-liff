@@ -162,13 +162,17 @@
     <input type="text" id="empId" inputmode="numeric" placeholder="กรอกรหัสพนักงาน" oninput="onEmpInput()" onchange="lookupEmp()" style="width:100%;padding:12px 14px;border:1.5px solid #ddd;border-radius:10px;font-size:15px;font-family:inherit;box-sizing:border-box;">
     <div id="empName" style="font-size:13px;margin:6px 0 16px;color:#888;">กรอกรหัสเพื่อยืนยันตัวตน — ระบบจะใช้ชื่อจริงแทนชื่อ LINE</div>
 
-    <label>สาขา</label>
-    <select id="branchSel" onchange="updateDeptLabel()">
+    <label>สาขา <span style="color:#6C3483;font-weight:normal">(เลือกได้หลายสาขา — กด ➕ เพิ่มทีละสาขา)</span></label>
+    <div style="display:flex;gap:8px;align-items:stretch;">
+    <select id="branchSel" style="flex:1">
       <option value="">— เลือกสาขา —</option>
       <option value="สำนักงานใหญ่">สำนักงานใหญ่</option>
       <option value="สาขาท่ามะกา">สาขาท่ามะกา</option>
       <option value="สาขาพนมทวน">สาขาพนมทวน</option>
     </select>
+    <button type="button" onclick="addBranch()" style="padding:0 16px;background:#6C3483;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:bold;cursor:pointer;white-space:nowrap;">➕ เพิ่ม</button>
+    </div>
+    <div id="branchChips" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;"></div>
 
     <label>แผนก <span style="color:#6C3483;font-weight:normal">(เลือกได้หลายแผนก — กด ➕ เพิ่มทีละแผนก)</span></label>
     <div style="display:flex;gap:8px;align-items:stretch;">
@@ -218,6 +222,7 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyUmPxiU96nNIC06qeki
 let myUserId = '';
 let myDisplayName = '';
 let selectedDepts = [];
+let selectedBranches = [];
 let empData = null;
 
 function onEmpInput() {
@@ -239,8 +244,7 @@ async function lookupEmp() {
       empData = d;
       nb.textContent = '✓ ' + d.name + ' (' + (d.branch||'') + ' / ' + (d.department||'') + ')';
       nb.style.color = '#27AE60';
-      var bs = document.getElementById('branchSel');
-      if (d.branch) bs.value = d.branch;               // เติมสาขาให้อัตโนมัติ
+      if (d.branch && selectedBranches.indexOf(d.branch) < 0) { selectedBranches.push(d.branch); renderBranchChips(); }  // เติมสาขาให้อัตโนมัติ
     } else {
       empData = null;
       nb.textContent = '✗ ไม่พบรหัสพนักงานนี้ในระบบ';
@@ -251,6 +255,36 @@ async function lookupEmp() {
     nb.textContent = '✗ ค้นหาไม่สำเร็จ ลองใหม่';
     nb.style.color = '#E53935';
   }
+}
+
+function addBranch() {
+  const sel = document.getElementById('branchSel');
+  const v = sel.value;
+  if (!v) return;
+  if (selectedBranches.indexOf(v) < 0) selectedBranches.push(v);
+  sel.value = '';
+  renderBranchChips();
+}
+
+function removeBranch(b) {
+  selectedBranches = selectedBranches.filter(function(x){ return x !== b; });
+  renderBranchChips();
+}
+
+function renderBranchChips() {
+  const box = document.getElementById('branchChips');
+  box.innerHTML = '';
+  selectedBranches.forEach(function(b) {
+    const chip = document.createElement('span');
+    chip.style.cssText = 'display:inline-flex;align-items:center;gap:6px;background:#E3F2FD;color:#1565C0;border:1px solid #90CAF9;border-radius:16px;padding:5px 12px;font-size:14px;';
+    chip.appendChild(document.createTextNode(b));
+    const x = document.createElement('span');
+    x.textContent = '✕';
+    x.style.cssText = 'cursor:pointer;font-weight:bold;';
+    x.onclick = function(){ removeBranch(b); };
+    chip.appendChild(x);
+    box.appendChild(chip);
+  });
 }
 
 function addDept() {
@@ -337,7 +371,8 @@ async function loadCurrentStatus() {
       document.getElementById('currentStatusBox').style.display = 'block';
       document.getElementById('btnCancel').style.display = 'block';
       // pre-fill
-      document.getElementById('branchSel').value = data.branch;
+      selectedBranches = String(data.branch || '').split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+      renderBranchChips();
       selectedDepts = String(data.department || '').split(',').map(function(s){ return s.trim(); }).filter(Boolean);
       renderChips();
     }
@@ -349,10 +384,10 @@ function updateDeptLabel() {
 }
 
 async function submitRegister() {
-  const branch = document.getElementById('branchSel').value;
+  const branch = selectedBranches.join(',');
   const dept   = selectedDepts.join(', ');
   if (!empData)  { showMsg('กรุณากรอกรหัสพนักงานที่ถูกต้องก่อน', 'error'); return; }
-  if (!branch) { showMsg('กรุณาเลือกสาขา', 'error'); return; }
+  if (selectedBranches.length === 0) { showMsg('กรุณาเพิ่มอย่างน้อย 1 สาขา (กด ➕ เพิ่ม)', 'error'); return; }
   if (selectedDepts.length === 0) { showMsg('กรุณาเพิ่มอย่างน้อย 1 แผนก (กด ➕ เพิ่ม)', 'error'); return; }
 
   const btn = document.getElementById('btnSubmit');
@@ -405,7 +440,8 @@ async function cancelRegister() {
     showMsg('🗑️ ' + data.message, 'success');
     document.getElementById('currentStatusBox').style.display = 'none';
     document.getElementById('btnCancel').style.display = 'none';
-    document.getElementById('branchSel').value = '';
+    selectedBranches = [];
+    renderBranchChips();
     selectedDepts = [];
     renderChips();
   } catch(err) {
