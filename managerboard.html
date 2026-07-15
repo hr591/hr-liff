@@ -87,7 +87,7 @@
 <script>
 const LIFF_ID    = '2010455823-ANmwSg0K';
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyUmPxiU96nNIC06qeki8Nqu7rv2Fk3zM_UzYVGpkL9EshQzIzVSjza0q74koSkUtHxzg/exec';
-let profile = null, pending = [], history = [], curTab = 'pending', query = '', histLoaded = false;
+let profile = null, pending = [], history = [], curTab = 'pending', query = '', histLoaded = false, waitingNext = 0;
 
 async function initApp() {
   try {
@@ -119,6 +119,7 @@ async function loadPending() {
     const res = await fetch(SCRIPT_URL + '?action=pending&userId=' + encodeURIComponent(profile.userId));
     const d = await res.json();
     pending = (d && d.items) || [];
+    waitingNext = (d && d.waitingNext) || 0;
     renderPending();
   } catch (e) { box.innerHTML = '<div class="empty">❌ โหลดรายการไม่สำเร็จ ลองรีเฟรช</div>'; }
 }
@@ -149,7 +150,9 @@ function renderCurrent(){ if (curTab === 'pending') renderPending(); else render
 
 function renderPending() {
   const box = document.getElementById('list');
-  document.getElementById('count').textContent = 'รออนุมัติ ' + pending.length + ' รายการ';
+  var cLabel = '🟣 รอคุณ ' + pending.length + ' รายการ';
+  if (waitingNext > 0) cLabel += ' · ⏳ รอชั้นถัดไป ' + waitingNext;
+  document.getElementById('count').textContent = cLabel;
   document.getElementById('btnAll').disabled = pending.length === 0;
   if (!pending.length) { box.innerHTML = '<div class="empty">🎉 ไม่มีคำขอค้างอนุมัติ</div>'; return; }
   var show = pending.filter(matchQ);
