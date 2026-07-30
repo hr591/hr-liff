@@ -418,7 +418,9 @@ async function submitRegister() {
       }) })
     });
     const data = await res.json();
-    showMsg('✅ ' + data.message, 'success');
+    var okMsg = data.message
+      || (data.dup || data.status === 'duplicate' ? 'บันทึกการลงทะเบียนแล้ว' : 'ลงทะเบียนเรียบร้อย');
+    showMsg('✅ ' + okMsg, 'success');
     document.getElementById('currentBranchDept').textContent =
       branch + ' / ' + (dept === 'DEFAULT' ? 'หัวหน้าสาขา' : dept);
     document.getElementById('currentStatusBox').style.display = 'block';
