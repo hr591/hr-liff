@@ -179,25 +179,31 @@
     <select id="deptSel" style="flex:1">
       <option value="">— เลือกแผนก —</option>
       <option value="DEFAULT">หัวหน้าสาขา (รับทุกแผนก)</option>
-      <option value="ขาย(SALE)">ขาย(SALE) · หัวหน้าสาย</option>
-      <option value="ขาย(ธุรการ)">ขาย(ธุรการ) · หัวหน้าสาย</option>
-      <option value="ขาย">⭐ ผู้จัดการขาย (คุมทุกสายขาย)</option>
-      <option value="บริการ(SA)">บริการ(SA) · หัวหน้าสาย</option>
-      <option value="บริการ(ธุรการ)">บริการ(ธุรการ) · หัวหน้าสาย</option>
-      <option value="บริการ(ช่าง)">บริการ(ช่าง) · หัวหน้าสาย</option>
-      <option value="บริการ">⭐ ผู้จัดการบริการ (คุมทุกสายบริการ)</option>
+      <optgroup label="── สายขาย ──">
+      <option value="ขาย (ธุรการ)">ขาย (ธุรการ) · หัวหน้าสาย</option>
+      <option value="ขาย (ประกัน)">ขาย (ประกัน) · หัวหน้าสาย</option>
+      <option value="ขาย">⭐ ผู้จัดการขาย (ขายหลัก + คุมทุกสายขาย)</option>
+      </optgroup>
+      <optgroup label="── สายบริการ ──">
+      <option value="บริการ (SA)">บริการ (SA) · หัวหน้าสาย</option>
+      <option value="บริการ (ธุรการ)">บริการ (ธุรการ) · หัวหน้าสาย</option>
+      <option value="บริการ (เลื่อนรถ)">บริการ (เลื่อนรถ) · หัวหน้าสาย</option>
+      <option value="บริการ">⭐ ผู้จัดการบริการ (บริการหลัก + คุมทุกสายบริการ)</option>
+      </optgroup>
+      <optgroup label="── แผนกอื่น (อนุมัติชั้นเดียว) ──">
       <option value="ตัวถังและสี">ตัวถังและสี</option>
       <option value="อะไหล่">อะไหล่</option>
-      <option value="อาคารและสถานที่">อาคารและสถานที่</option>
+      <option value="อาคารสถานที่และ รปภ.">อาคารสถานที่และ รปภ.</option>
       <option value="ลูกค้าสัมพันธ์">ลูกค้าสัมพันธ์</option>
       <option value="การเงิน">การเงิน</option>
       <option value="บัญชี">บัญชี</option>
       <option value="บุคคล">บุคคล</option>
-      <option value="เลขา">เลขา</option>
+      <option value="เลขานุการ">เลขานุการ</option>
       <option value="แม่บ้าน">แม่บ้าน</option>
       <option value="การตลาดประชาสัมพันธ์">การตลาดประชาสัมพันธ์</option>
       <option value="Digital Marketing">Digital Marketing</option>
       <option value="VDQI">VDQI</option>
+      </optgroup>
     </select>
     <button type="button" onclick="addDept()" style="padding:0 16px;background:#6C3483;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:bold;cursor:pointer;white-space:nowrap;">➕ เพิ่ม</button>
     </div>
