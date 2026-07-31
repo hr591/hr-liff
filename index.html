@@ -72,7 +72,7 @@
     </div>
     <div class="form-group"><label>สาขา <span class="req">*</span></label><input type="text" id="fBranch" readonly placeholder="— กรอกรหัสพนักงานก่อน —" style="background:#F0F2F7;color:#555;cursor:not-allowed;"></div>
     <div class="form-group"><label>แผนก <span class="req">*</span></label><input type="text" id="fDept" readonly placeholder="— กรอกรหัสพนักงานก่อน —" style="background:#F0F2F7;color:#555;cursor:not-allowed;"></div>
-    <div class="form-group"><label>วันที่ขอกลับ <span class="req">*</span></label><input type="date" id="fDate"></div>
+    <div class="form-group"><label>วันที่ขอกลับ <span class="req">*</span></label><input type="date" id="fDate" onchange="onDateChange()"></div>
     <div class="form-group"><label>เวลาที่ขอกลับ <span class="req">*</span></label><select id="fTime"><option value="">— เลือกเวลา —</option><option value="16:00">16:00 น. (กลับก่อน 1 ชม. · 2 ครั้ง/เดือน)</option><option value="15:00">15:00 น. (กลับก่อน 2 ชม. · 1 ครั้ง/เดือน)</option></select><div id="quotaInfo" style="font-size:12px;margin-top:7px;font-weight:600;color:#1A73E8;"></div></div>
     <div class="form-group"><label>เหตุผล <span class="req">*</span></label><textarea id="fReason" placeholder="ระบุเหตุผลการขอกลับก่อนเวลา เช่น นัดหมอ, ธุระครอบครัว..."></textarea></div>
     <button class="btn-submit" id="btnSubmit" onclick="submitForm()">📤 ส่งคำขอ</button>
@@ -154,7 +154,7 @@ async function lookupEmp() {
       document.getElementById('fDept').value = d.department || '';
       nb.textContent = '✓ ' + d.name; nb.style.color = '#27AE60';
       updateBadge();
-      loadStats(code);
+      loadStats(code, fDateDMY());
     } else {
       empData = null;
       document.getElementById('fBranch').value = '';
@@ -170,9 +170,11 @@ async function lookupEmp() {
 const QUOTA_PER_MONTH = 2;
 let quotaRemaining = QUOTA_PER_MONTH;
 
-async function loadStats(code) {
+function fDateDMY() { var v = document.getElementById('fDate').value; if (!v) return ''; var p = v.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
+function onDateChange() { if (empData) loadStats(document.getElementById('fEmpId').value.trim(), fDateDMY()); }
+async function loadStats(code, dateStr) {
   try {
-    const res = await fetch(SCRIPT_URL + '?action=stats&code=' + encodeURIComponent(code));
+    const res = await fetch(SCRIPT_URL + '?action=stats&code=' + encodeURIComponent(code) + (dateStr ? '&date=' + encodeURIComponent(dateStr) : ''));
     const data = await res.json();
     const oneH = Number(data.oneHour) || 0;   // 16:00
     const twoH = Number(data.twoHour) || 0;   // 15:00
