@@ -96,6 +96,14 @@ function cls(status) {
   return 'wait';
 }
 
+function appvLine(it) {
+  var verb = (it.status==='ไม่อนุมัติ'||it.status==='ปฏิเสธ') ? 'ผู้ตัดสิน' : 'อนุมัติโดย';
+  if (it.lead1 && it.approver) return '<div class="item-sub">👤 หัวหน้า: ' + it.lead1 + ' → ผจก.: ' + it.approver + '</div>';
+  if (it.approver) return '<div class="item-sub">👤 ' + verb + ': ' + it.approver + '</div>';
+  if (it.lead1) return '<div class="item-sub">👤 หัวหน้าอนุมัติ: ' + it.lead1 + '</div>';
+  return '';
+}
+
 async function loadMyRequests() {
   const box = document.getElementById('list');
   box.innerHTML = '<div class="empty">⏳ กำลังโหลด...</div>';
@@ -124,6 +132,7 @@ function render() {
       + '<div class="item-top"><div class="item-type">' + it.type + '</div>'
       + '<div class="badge s-' + c + '">' + it.status + '</div></div>'
       + '<div class="item-sub">📅 ' + it.date + ' &nbsp;·&nbsp; รหัส: ' + it.id + '</div>'
+      + appvLine(it)
       + cancel + '</div>';
   }).join('');
 }

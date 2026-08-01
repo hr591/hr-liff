@@ -160,7 +160,8 @@ function renderPending() {
   box.innerHTML = show.map(function(it){
     var sub = '👤 <b>' + esc(it.name||'-') + '</b> &nbsp;·&nbsp; ' + esc(it.branch||'') + (it.dept?(' / '+esc(it.dept)):'')
       + '<br>📅 ' + esc(it.date||'-') + (it.time?(' &nbsp;·&nbsp; ⏰ '+esc(it.time)):'')
-      + (it.reason?('<br>📝 '+esc(it.reason)):'');
+      + (it.reason?('<br>📝 '+esc(it.reason)):'')
+      + (it.stage==='ผู้จัดการ' ? ('<br>🟢 ชั้นผู้จัดการ' + (it.lead1?(' · หัวหน้า '+esc(it.lead1)+' อนุมัติแล้ว'):'')) : '');
     return '<div class="item" id="it-' + esc(it.id) + '">'
       + '<div class="item-top"><div class="item-type">' + esc(it.type) + '</div></div>'
       + '<div class="item-sub">' + sub + '</div>'
@@ -191,11 +192,14 @@ function renderHistory(){
   var show = history.filter(matchQ);
   if (!show.length) { box.innerHTML = '<div class="empty">🔍 ไม่พบรายการที่ค้นหา</div>'; return; }
   box.innerHTML = show.map(function(it){
-    var ok = it.status === 'อนุมัติแล้ว';
-    var badge = ok ? '<span class="badge b-ok">✅ อนุมัติแล้ว</span>' : '<span class="badge b-no">❌ ไม่อนุมัติ</span>';
+    var ok = it.status !== 'ไม่อนุมัติ' && it.status !== 'ปฏิเสธ';
+    var badge = ok ? '<span class="badge b-ok">✅ ' + esc(it.status) + '</span>' : '<span class="badge b-no">❌ ' + esc(it.status) + '</span>';
     var sub = '👤 <b>' + esc(it.name||'-') + '</b> &nbsp;·&nbsp; ' + esc(it.branch||'') + (it.dept?(' / '+esc(it.dept)):'')
       + '<br>📅 ' + esc(it.date||'-') + (it.time?(' &nbsp;·&nbsp; ⏰ '+esc(it.time)):'')
-      + (it.reason?('<br>📝 '+esc(it.reason)):'');
+      + (it.reason?('<br>📝 '+esc(it.reason)):'')
+      + (it.lead1 && it.approver ? ('<br>👤 หัวหน้า: '+esc(it.lead1)+' → ผจก.: '+esc(it.approver))
+         : (it.approver ? ('<br>👤 อนุมัติโดย: '+esc(it.approver))
+         : (it.lead1 ? ('<br>👤 หัวหน้าอนุมัติ: '+esc(it.lead1)) : '')));
     return '<div class="item ' + (ok?'hist-ok':'hist-no') + '">'
       + '<div class="item-top"><div class="item-type">' + esc(it.type) + '</div>' + badge + '</div>'
       + '<div class="item-sub">' + sub + '</div></div>';
