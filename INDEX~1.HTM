@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<script>
+(function(){ try{
+  var P='line-scdn.net';
+  var OF=window.fetch;
+  if(OF){ window.fetch=function(u,o){ try{ var s=(u&&u.url)?u.url:(''+u); if(s.indexOf(P)!==-1){ o=Object.assign({},o,{cache:'no-store'}); } }catch(e){} return OF.call(this,u,o); }; }
+  var XO=XMLHttpRequest.prototype.open;
+  XMLHttpRequest.prototype.open=function(m,url){ try{ if(typeof url==='string'&&url.indexOf(P)!==-1){ url+=(url.indexOf('\u003f')===-1?'\u003f':'&')+'_n='+Date.now(); arguments[1]=url; } }catch(e){} return XO.apply(this,arguments); };
+}catch(e){} })();
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ระบบขอกลับก่อนเวลา</title>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, 'Prompt', 'Noto Sans Thai', sans-serif; background: #EEF2F7; min-height: 100vh; color: #1A1A2E; }
+  .header { background: linear-gradient(135deg, #1A73E8 0%, #0D47A1 100%); color: #fff; padding: 22px 16px 18px; text-align: center; position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 12px rgba(26,115,232,0.3); }
+  .header h1 { font-size: 17px; font-weight: 700; }
+  .header sub { font-size: 11px; opacity: 0.82; display: block; margin-top: 3px; }
+  .card { background: #fff; border-radius: 14px; padding: 16px; margin: 14px 14px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.07); }
+  .user-card { display: flex; align-items: center; gap: 13px; }
+  .avatar { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2.5px solid #E3EDFF; background: #E3EDFF; }
+  .user-name { font-size: 15px; font-weight: 700; }
+  .user-badge { display: inline-block; font-size: 10px; background: #E8F0FE; color: #1A73E8; border-radius: 20px; padding: 2px 8px; margin-top: 4px; font-weight: 600; }
+  .stats-row { display: flex; gap: 10px; margin: 14px 14px 0; }
+  .stat { flex: 1; background: #fff; border-radius: 12px; padding: 14px 8px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
+  .stat-num { font-size: 26px; font-weight: 800; color: #1A73E8; line-height: 1; }
+  .stat-label { font-size: 10px; color: #999; margin-top: 5px; line-height: 1.4; }
+  .form-title { font-size: 13px; font-weight: 700; color: #444; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid #F0F0F0; }
+  .form-group { margin-bottom: 14px; }
+  .form-group label { display: block; font-size: 12px; font-weight: 600; color: #666; margin-bottom: 6px; }
+  .req { color: #E53935; margin-left: 2px; }
+  input, select, textarea { width: 100%; padding: 11px 13px; border: 1.5px solid #DDE3F0; border-radius: 9px; font-size: 14px; color: #1A1A2E; background: #FAFBFF; -webkit-appearance: none; transition: border-color .18s, box-shadow .18s; font-family: inherit; }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: #1A73E8; box-shadow: 0 0 0 3px rgba(26,115,232,0.12); background: #fff; }
+  select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 13px center; padding-right: 36px; }
+  textarea { resize: none; height: 88px; line-height: 1.5; }
+  .btn-submit { width: 100%; padding: 14px; background: linear-gradient(135deg, #1A73E8, #0D47A1); color: #fff; border: none; border-radius: 11px; font-size: 15px; font-weight: 700; cursor: pointer; transition: opacity .2s, transform .1s; font-family: inherit; margin-top: 6px; }
+  .btn-submit:active { opacity: .85; transform: scale(.99); }
+  .btn-submit:disabled { background: #B0BEC5; cursor: not-allowed; }
+  #successScreen { display: none; text-align: center; padding: 50px 24px; margin: 14px; background: #fff; border-radius: 16px; box-shadow: 0 2px 10px rgba(0,0,0,.07); }
+  .success-icon { font-size: 56px; margin-bottom: 14px; }
+  .success-title { font-size: 19px; font-weight: 700; color: #27AE60; }
+  .success-desc { font-size: 13px; color: #888; margin-top: 10px; line-height: 1.7; }
+  #loadingScreen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; gap: 14px; color: #888; font-size: 14px; }
+  .spinner { width: 36px; height: 36px; border: 3px solid #E3EDFF; border-top-color: #1A73E8; border-radius: 50%; animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spacer { height: 24px; }
+</style>
+</head>
+<body>
+<div id="loadingScreen"><div class="spinner"></div><span>กำลังโหลด...</span></div>
+<div id="mainApp" style="display:none;">
+  <div class="header"><h1>📋 ระบบขอกลับก่อนเวลา</h1><sub>กรอกข้อมูลและรอการอนุมัติจากหัวหน้า</sub></div>
+  <div class="card user-card">
+    <img id="userAvatar" class="avatar" src="" alt="avatar">
+    <div><div id="userName" class="user-name">—</div><div id="userBadge" class="user-badge">—</div></div>
+  </div>
+  <div class="stats-row">
+    <div class="stat"><div id="s1h" class="stat-num">—</div><div class="stat-label">กลับก่อน<br>1 ชม.</div></div>
+    <div class="stat"><div id="s2h" class="stat-num">—</div><div class="stat-label">กลับก่อน<br>2 ชม.</div></div>
+    <div class="stat"><div id="sTotal" class="stat-num">—</div><div class="stat-label">รวม<br>เดือนนี้</div></div>
+  </div>
+  <div id="formCard" class="card" style="margin-bottom:0;">
+    <div class="form-title">📝 ข้อมูลการขอกลับก่อนเวลา</div>
+    <div class="form-group">
+      <label>รหัสพนักงาน <span class="req">*</span></label>
+      <input type="text" id="fEmpId" placeholder="พิมพ์รหัสพนักงาน เช่น 11001001" maxlength="20" inputmode="numeric" autocomplete="off" onchange="lookupEmp()" oninput="onEmpInput()">
+      <div id="empName" style="font-size:13px;margin-top:7px;font-weight:600;"></div>
+    </div>
+    <div class="form-group"><label>สาขา <span class="req">*</span></label><input type="text" id="fBranch" readonly placeholder="— กรอกรหัสพนักงานก่อน —" style="background:#F0F2F7;color:#555;cursor:not-allowed;"></div>
+    <div class="form-group"><label>แผนก <span class="req">*</span></label><input type="text" id="fDept" readonly placeholder="— กรอกรหัสพนักงานก่อน —" style="background:#F0F2F7;color:#555;cursor:not-allowed;"></div>
+    <div class="form-group"><label>วันที่ขอกลับ <span class="req">*</span></label><input type="date" id="fDate" onchange="onDateChange()"></div>
+    <div class="form-group"><label>เวลาที่ขอกลับ <span class="req">*</span></label><select id="fTime"><option value="">— เลือกเวลา —</option><option value="16:00">16:00 น. (กลับก่อน 1 ชม. · 2 ครั้ง/เดือน)</option><option value="15:00">15:00 น. (กลับก่อน 2 ชม. · 1 ครั้ง/เดือน)</option></select><div id="quotaInfo" style="font-size:12px;margin-top:7px;font-weight:600;color:#1A73E8;"></div></div>
+    <div class="form-group"><label>เหตุผล <span class="req">*</span></label><textarea id="fReason" placeholder="ระบุเหตุผลการขอกลับก่อนเวลา เช่น นัดหมอ, ธุระครอบครัว..."></textarea></div>
+    <button class="btn-submit" id="btnSubmit" onclick="submitForm()">📤 ส่งคำขอ</button>
+  </div>
+  <div id="successScreen">
+    <div class="success-icon">✅</div>
+    <div class="success-title">ส่งคำขอสำเร็จ!</div>
+    <div class="success-desc">คำขอของคุณถูกส่งไปยังหัวหน้างานแล้ว<br>คุณจะได้รับแจ้งผลการพิจารณาผ่าน LINE<br><br><small style="color:#bbb;">หน้าต่างจะปิดโดยอัตโนมัติ...</small></div>
+  </div>
+  <div class="spacer"></div>
+</div>
+<script>
+const LIFF_ID    = '2010455823-95Ld5cHb';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyUmPxiU96nNIC06qeki8Nqu7rv2Fk3zM_UzYVGpkL9EshQzIzVSjza0q74koSkUtHxzg/exec';
+let profile = null;
+
+async function initApp() {
+
+  // Fix: LINE WebView Android cache bug - bypass stale cache for LIFF SDK JSON
+  const _origFetch = window.fetch;
+  window.fetch = function(url, opts) {
+    if (url && url.toString().startsWith('https://liffsdk.line-scdn.net/xlt/') && url.toString().endsWith('.json')) {
+      url = url + '?ts=' + Math.random();
+    }
+    return _origFetch(url, opts);
+  };
+  try {
+    if (typeof liff === 'undefined') throw new Error('LIFF SDK ไม่โหลด');
+    await Promise.race([
+      liff.init({ liffId: LIFF_ID }),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout: liff.init 10s')), 10000))
+    ]);
+    if (!liff.isLoggedIn()) { liff.login({ redirectUri: location.href }); return; }
+    profile = await liff.getProfile();
+    document.getElementById('userName').textContent = profile.displayName;
+    document.getElementById('userAvatar').src = profile.pictureUrl || '';
+    document.getElementById('fDate').value = new Date().toISOString().slice(0, 10);
+    applyQuota();
+    document.getElementById('loadingScreen').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'block';
+  } catch (err) {
+    const msg = (err && (err.message || err.code || JSON.stringify(err))) || 'unknown';
+    document.getElementById('loadingScreen').innerHTML = '<div style="color:#E53935;font-size:13px;text-align:center;padding:20px;">✗ เกิดข้อผิดพลาด<br><small>' + msg + '</small></div>';
+  }
+}
+
+function updateBadge() {
+  const branch = document.getElementById('fBranch').value;
+  const dept = document.getElementById('fDept').value;
+  const badge = document.getElementById('userBadge');
+  if (branch && dept) badge.textContent = branch + ' · ' + dept;
+  else if (branch) badge.textContent = branch;
+  else if (dept) badge.textContent = dept;
+  else badge.textContent = '—';
+}
+
+// ค้นหาพนักงานจากรหัส → เด้ง ชื่อ/สาขา/แผนก
+let empData = null;
+function onEmpInput() {
+  empData = null;
+  document.getElementById('fBranch').value = '';
+  document.getElementById('fDept').value = '';
+  const nb = document.getElementById('empName'); if (nb) nb.textContent = '';
+  ['s1h','s2h','sTotal'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent='—'; });
+  quotaRemaining = QUOTA_PER_MONTH;
+  applyQuota();
+}
+async function lookupEmp() {
+  const code = document.getElementById('fEmpId').value.trim();
+  const nb = document.getElementById('empName');
+  if (!code) { nb.textContent = ''; return; }
+  nb.textContent = '⏳ กำลังค้นหา...'; nb.style.color = '#888';
+  try {
+    const res = await fetch(SCRIPT_URL + '?action=emp&code=' + encodeURIComponent(code));
+    const d = await res.json();
+    if (d.found) {
+      empData = d;
+      document.getElementById('fBranch').value = d.branch || '';
+      document.getElementById('fDept').value = d.department || '';
+      nb.textContent = '✓ ' + d.name; nb.style.color = '#27AE60';
+      updateBadge();
+      loadStats(code, fDateDMY());
+    } else {
+      empData = null;
+      document.getElementById('fBranch').value = '';
+      document.getElementById('fDept').value = '';
+      nb.textContent = '✗ ไม่พบรหัสพนักงานนี้ในระบบ'; nb.style.color = '#E53935';
+    }
+  } catch (e) {
+    nb.textContent = '✗ ค้นหาไม่สำเร็จ ลองใหม่'; nb.style.color = '#E53935';
+  }
+}
+
+// โควตา: 2 หน่วย/เดือน — 16:00 ใช้ 1 หน่วย (ได้ 2 ครั้ง), 15:00 ใช้ 2 หน่วย (ได้ 1 ครั้ง)
+const QUOTA_PER_MONTH = 2;
+let quotaRemaining = QUOTA_PER_MONTH;
+
+function fDateDMY() { var v = document.getElementById('fDate').value; if (!v) return ''; var p = v.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
+function onDateChange() { if (empData) loadStats(document.getElementById('fEmpId').value.trim(), fDateDMY()); }
+async function loadStats(code, dateStr) {
+  try {
+    const res = await fetch(SCRIPT_URL + '?action=stats&code=' + encodeURIComponent(code) + (dateStr ? '&date=' + encodeURIComponent(dateStr) : ''));
+    const data = await res.json();
+    const oneH = Number(data.oneHour) || 0;   // 16:00
+    const twoH = Number(data.twoHour) || 0;   // 15:00
+    document.getElementById('s1h').textContent = oneH;
+    document.getElementById('s2h').textContent = twoH;
+    document.getElementById('sTotal').textContent = data.total ?? '0';
+    const used = oneH * 1 + twoH * 2;
+    quotaRemaining = Math.max(0, QUOTA_PER_MONTH - used);
+  } catch (_) {
+    ['s1h','s2h','sTotal'].forEach(id => document.getElementById(id).textContent = '0');
+    quotaRemaining = QUOTA_PER_MONTH;
+  }
+  applyQuota();
+}
+
+function applyQuota() {
+  const sel  = document.getElementById('fTime');
+  const o16  = sel.querySelector('option[value="16:00"]');
+  const o15  = sel.querySelector('option[value="15:00"]');
+  const q    = document.getElementById('quotaInfo');
+  const noCode = !empData;
+  o16.disabled = noCode || quotaRemaining < 1;
+  o15.disabled = noCode || quotaRemaining < 2;
+  o16.textContent = '16:00 น. (กลับก่อน 1 ชม. · 2 ครั้ง/เดือน)' + (!noCode && o16.disabled ? ' — ครบแล้ว' : '');
+  o15.textContent = '15:00 น. (กลับก่อน 2 ชม. · 1 ครั้ง/เดือน)' + (!noCode && o15.disabled ? ' — ครบแล้ว' : '');
+  if ((sel.value === '15:00' && o15.disabled) || (sel.value === '16:00' && o16.disabled)) sel.value = '';
+  if (noCode) { q.textContent = '📌 กรอกรหัสพนักงานก่อน ระบบจะเช็คจำนวนครั้งคงเหลือให้'; q.style.color = '#888'; }
+  else if (quotaRemaining <= 0) { q.textContent = '⚠️ ใช้ครบจำนวนครั้งลากลับก่อนเวลาเดือนนี้แล้ว'; q.style.color = '#E53935'; }
+  else if (quotaRemaining === 1) { q.textContent = '🎫 เหลือ: กลับ 16:00 ได้อีก 1 ครั้ง (15:00 โควตาไม่พอ)'; q.style.color = '#1A73E8'; }
+  else { q.textContent = '🎫 เดือนนี้ยังไม่ได้ใช้ — กลับ 16:00 ได้ 2 ครั้ง หรือ 15:00 ได้ 1 ครั้ง'; q.style.color = '#1A73E8'; }
+}
+
+async function submitForm() {
+  const branch = document.getElementById('fBranch').value.trim();
+  const dept = document.getElementById('fDept').value.trim();
+  const empId = document.getElementById('fEmpId').value.trim();
+  const date = document.getElementById('fDate').value.trim();
+  const time = document.getElementById('fTime').value.trim();
+  const reason = document.getElementById('fReason').value.trim();
+  if (!empData) { alert('⚠️ กรุณากรอกรหัสพนักงานที่ถูกต้อง (ระบบจะเด้งชื่อ/สาขา/แผนกให้)'); return; }
+  if (!branch || !dept || !empId || !date || !time || !reason) { alert('⚠️ กรุณากรอกข้อมูลให้ครบถ้วนทุกช่อง'); return; }
+  const cost = time === '15:00' ? 2 : (time === '16:00' ? 1 : 0);
+  if (cost === 0) { alert('⚠️ กรุณาเลือกเวลาที่ขอกลับ (15:00 หรือ 16:00)'); return; }
+  if (cost > quotaRemaining) { alert('⚠️ จำนวนครั้งลากลับก่อนเวลาเดือนนี้ไม่พอ\n(16:00 ได้ 2 ครั้ง/เดือน · 15:00 ได้ 1 ครั้ง/เดือน · ถ้าใช้ 16:00 ไปแล้วจะใช้ 15:00 ไม่ได้)'); return; }
+  const [y, m, d] = date.split('-');
+  const displayDate = d + '/' + m + '/' + y;
+  const btn = document.getElementById('btnSubmit');
+  btn.disabled = true; btn.textContent = '⏳ กำลังส่ง...';
+  const payload = { type: 'earlyLeave', userId: profile.userId, displayName: (empData && empData.name) ? empData.name : profile.displayName, pictureUrl: profile.pictureUrl || '', branch, department: dept, employeeId: empId, date: displayDate, leaveTime: time, reason };
+  try {
+    await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: new URLSearchParams({ payload: JSON.stringify(payload) }) });
+    document.getElementById('formCard').style.display = 'none';
+    document.querySelector('.stats-row').style.display = 'none';
+    document.querySelector('.user-card').parentElement.style.display = 'none';
+    document.getElementById('successScreen').style.display = 'block';
+    setTimeout(function () { try { liff.closeWindow(); } catch (_) {} }, 3000);
+  } catch (err) {
+    alert('❌ เกิดข้อผิดพลาด\n' + err.message);
+    btn.disabled = false; btn.textContent = '📤 ส่งคำขอ';
+  }
+}
+initApp();
+</script>
+</body>
+</html>
