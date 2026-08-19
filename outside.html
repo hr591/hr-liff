@@ -139,13 +139,20 @@ async function initApp() {
     document.getElementById('userName').textContent = profile.displayName;
     document.getElementById('userAvatar').src = profile.pictureUrl || '';
     document.getElementById('fDate').value = new Date().toISOString().slice(0,10);
-    // เช็คว่ามีรายการที่ยังไม่ปิดไหม
-    try {
-      const res = await fetch(SCRIPT_URL + '?action=outsideOpen&userId=' + encodeURIComponent(profile.userId));
-      const d = await res.json();
-      if (d && d.open) { openReq = d; showBackMode(d); }
-      else showFormMode();
-    } catch(_) { showFormMode(); }
+    // เช็คว่ามีรายการที่ยังไม่ปิดไหม (retry กันเน็ต/LIFF สะดุด)
+    var d = null, ok = false;
+    for (var _try = 0; _try < 3 && !ok; _try++) {
+      try {
+        var res = await fetch(SCRIPT_URL + '?action=outsideOpen&userId=' + encodeURIComponent(profile.userId));
+        d = await res.json();
+        ok = true;
+      } catch(_) {
+        if (_try < 2) await new Promise(function(r){ setTimeout(r, 900); });
+      }
+    }
+    if (!ok) { showLoadError(); }
+    else if (d && d.open) { openReq = d; showBackMode(d); }
+    else showFormMode();
     document.getElementById('loadingScreen').style.display = 'none';
     document.getElementById('mainApp').style.display = 'block';
   } catch (err) {
@@ -153,6 +160,30 @@ async function initApp() {
   }
 }
 
+function showLoadError(){
+  var f=document.getElementById('formCard'); if(f) f.style.display='none';
+  var b=document.getElementById('backCard'); if(b) b.style.display='none';
+  var e=document.getElementById('errCard');
+  if(!e){ e=document.createElement('div'); e.id='errCard'; e.className='card'; e.style.textAlign='center'; e.style.padding='24px'; document.getElementById('mainApp').appendChild(e); }
+  e.style.display='block';
+  e.innerHTML='<div style="font-size:15px;color:#c62828">\u26a0\ufe0f \u0e42\u0e2b\u0e25\u0e14\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e44\u0e21\u0e48\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08</div><div style="font-size:13px;color:#888;margin-top:6px">\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e31\u0e0d\u0e0d\u0e32\u0e13\u0e40\u0e19\u0e47\u0e15\u0e41\u0e25\u0e49\u0e27\u0e25\u0e2d\u0e07\u0e43\u0e2b\u0e21\u0e48</div><button onclick="retryCheck()" style="margin-top:16px;padding:12px 28px;border:none;border-radius:30px;background:#16a34a;color:#fff;font-size:15px;font-weight:700">\ud83d\udd04 \u0e25\u0e2d\u0e07\u0e43\u0e2b\u0e21\u0e48</button>';
+}
+async function retryCheck(){
+  var e=document.getElementById('errCard'); if(e) e.style.display='none';
+  var ls=document.getElementById('loadingScreen'); if(ls) ls.style.display='block';
+  var d=null, ok=false;
+  for(var t=0;t<3 && !ok;t++){ try{ var res=await fetch(SCRIPT_URL + '?action=outsideOpen&userId=' + encodeURIComponent(profile.userId)); d=await res.json(); ok=true; }catch(_){ if(t<2) await new Promise(function(r){setTimeout(r,900);}); } }
+  if(ls) ls.style.display='none';
+  if(!ok){ showLoadError(); }
+  else if(d && d.open){ openReq=d; showBackMode(d); }
+  else showFormMode();
+}
+function fmtDate(s){
+  if(!s) return '-';
+  var dt=new Date(s);
+  if(isNaN(dt.getTime())) return String(s);
+  return ('0'+dt.getDate()).slice(-2)+'/'+('0'+(dt.getMonth()+1)).slice(-2)+'/'+dt.getFullYear();
+}
 function showFormMode() {
   document.getElementById('formCard').style.display = 'block';
   document.getElementById('backCard').style.display = 'none';
@@ -171,7 +202,7 @@ function showBackMode(d) {
   document.getElementById('formCard').style.display = 'none';
   document.getElementById('userBadge').textContent = (d.branch||'') + ' · ' + (d.department||'');
   document.getElementById('openInfo').innerHTML =
-    '📅 วันที่: <b>' + (d.date||'-') + '</b><br>' +
+    '📅 วันที่: <b>' + fmtDate(d.date) + '</b><br>' +
     '⏰ ออกเวลา: <b>' + fmtHM(d.timeOut) + '</b> · กลับ(ประมาณ): <b>' + fmtHM(d.timeBack) + '</b><br>' +
     '📝 เหตุผล: ' + (d.reason||'-') + '<br>' +
     '📌 สถานะ: <b>' + (d.status||'-') + '</b>';
