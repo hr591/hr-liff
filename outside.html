@@ -143,7 +143,7 @@ async function initApp() {
     var d = null, ok = false;
     for (var _try = 0; _try < 3 && !ok; _try++) {
       try {
-        var res = await fetch(SCRIPT_URL + '?action=outsideOpen&userId=' + encodeURIComponent(profile.userId));
+        var res = await Promise.race([ fetch(SCRIPT_URL + '?action=outsideOpen&userId=' + encodeURIComponent(profile.userId)), new Promise(function(_x,rej){ setTimeout(function(){ rej(new Error('timeout')); }, 8000); }) ]);
         d = await res.json();
         ok = true;
       } catch(_) {
