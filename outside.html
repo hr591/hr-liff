@@ -139,25 +139,39 @@ async function initApp() {
     document.getElementById('userName').textContent = profile.displayName;
     document.getElementById('userAvatar').src = profile.pictureUrl || '';
     document.getElementById('fDate').value = new Date().toISOString().slice(0,10);
-    // เช็คว่ามีรายการที่ยังไม่ปิดไหม (retry กันเน็ต/LIFF สะดุด)
-    var d = null, ok = false;
-    for (var _try = 0; _try < 3 && !ok; _try++) {
-      try {
-        var res = await Promise.race([ fetch(SCRIPT_URL + '?action=outsideOpen&userId=' + encodeURIComponent(profile.userId)), new Promise(function(_x,rej){ setTimeout(function(){ rej(new Error('timeout')); }, 8000); }) ]);
-        d = await res.json();
-        ok = true;
-      } catch(_) {
-        if (_try < 2) await new Promise(function(r){ setTimeout(r, 900); });
-      }
+    // แสดงสถานะล่าสุดที่จำไว้ในเครื่องทันที แล้วเช็คกับเซิร์ฟเวอร์เบื้องหลัง (ไม่ต้องหมุนรอ)
+    var cached = _loadState();
+    if (cached) {
+      _applyState(cached);
+      _fetchState().then(function(d){ if (d) { _saveState(d); if (_stateSig(d) !== _stateSig(cached)) _applyState(d); } });
+    } else {
+      var d = await _fetchState();
+      if (!d) { showLoadError(); }
+      else { _saveState(d); _applyState(d); }
     }
-    if (!ok) { showLoadError(); }
-    else if (d && d.open) { openReq = d; showBackMode(d); }
-    else showFormMode();
     document.getElementById('loadingScreen').style.display = 'none';
     document.getElementById('mainApp').style.display = 'block';
   } catch (err) {
     document.getElementById('loadingScreen').innerHTML = '<div style="color:#E53935;font-size:13px;text-align:center;padding:20px;">✗ เกิดข้อผิดพลาด<br><small>' + (err && err.message || err) + '</small></div>';
   }
+}
+
+function _lsKey(){ return 'hr_out_state_' + (profile && profile.userId || ''); }
+function _loadState(){ try{ var v=JSON.parse(localStorage.getItem(_lsKey())||'null'); return (v && typeof v==='object') ? v : null; }catch(_){ return null; } }
+function _saveState(d){ try{ localStorage.setItem(_lsKey(), JSON.stringify((d && d.open) ? d : {open:false})); }catch(_){} }
+function _stateSig(d){ return (d && d.open) ? ['1', d.id||'', d.status||'', d.date||'', d.timeOut||'', d.timeBack||''].join('|') : '0'; }
+function _applyState(d){
+  var e=document.getElementById('errCard'); if(e) e.style.display='none';
+  if (d && d.open) { openReq = d; showBackMode(d); } else { openReq = null; showFormMode(); }
+}
+async function _fetchState(){
+  for (var t = 0; t < 3; t++) {
+    try {
+      var res = await Promise.race([ fetch(SCRIPT_URL + '?action=outsideOpen&userId=' + encodeURIComponent(profile.userId)), new Promise(function(_x,rej){ setTimeout(function(){ rej(new Error('timeout')); }, 20000); }) ]);
+      return await res.json();
+    } catch(_) { if (t < 2) await new Promise(function(r){ setTimeout(r, 900); }); }
+  }
+  return null;
 }
 
 function showLoadError(){
@@ -171,12 +185,10 @@ function showLoadError(){
 async function retryCheck(){
   var e=document.getElementById('errCard'); if(e) e.style.display='none';
   var ls=document.getElementById('loadingScreen'); if(ls) ls.style.display='block';
-  var d=null, ok=false;
-  for(var t=0;t<3 && !ok;t++){ try{ var res=await fetch(SCRIPT_URL + '?action=outsideOpen&userId=' + encodeURIComponent(profile.userId)); d=await res.json(); ok=true; }catch(_){ if(t<2) await new Promise(function(r){setTimeout(r,900);}); } }
+  var d = await _fetchState();
   if(ls) ls.style.display='none';
-  if(!ok){ showLoadError(); }
-  else if(d && d.open){ openReq=d; showBackMode(d); }
-  else showFormMode();
+  if(!d){ showLoadError(); }
+  else { _saveState(d); _applyState(d); }
 }
 function fmtDate(s){
   if(!s) return '-';
@@ -284,6 +296,7 @@ async function submitOut() {
     await fetch(SCRIPT_URL, { method:'POST', mode:'no-cors', body:new URLSearchParams({ payload: JSON.stringify(payload) }) });
     document.getElementById('formCard').style.display='none';
     document.querySelector('.user-card').parentElement.style.display='none';
+    _saveState({open:true, id:'', date:payload.date, timeOut:tOut, timeBack:tBack, reason:reason, status:'รอดำเนินการ', branch:branch, department:dept});
     document.getElementById('okTitle').textContent = 'ส่งคำขอออกแล้ว!';
     document.getElementById('okDesc').innerHTML = 'รอหัวหน้าอนุมัติ<br>เมื่อกลับถึงบริษัท ให้เปิดเมนูนี้อีกครั้งแล้วกด "กลับเข้าบริษัทแล้ว"<br><br><small style="color:#bbb;">หน้าต่างจะปิดอัตโนมัติ...</small>';
     document.getElementById('okScreen').style.display='block';
@@ -352,6 +365,7 @@ async function submitBack(photoB64) {
     await fetch(SCRIPT_URL, { method:'POST', mode:'no-cors', body:new URLSearchParams({ payload: JSON.stringify(payload) }) });
     document.getElementById('backCard').style.display='none';
     document.querySelector('.user-card').parentElement.style.display='none';
+    _saveState({open:false});
     document.getElementById('okTitle').textContent = 'บันทึกการกลับแล้ว!';
     document.getElementById('okDesc').innerHTML = 'บันทึกเวลากลับ + พิกัด GPS เรียบร้อย<br>แจ้งหัวหน้าแล้ว<br><br><small style="color:#bbb;">หน้าต่างจะปิดอัตโนมัติ...</small>';
     document.getElementById('okScreen').style.display='block';
