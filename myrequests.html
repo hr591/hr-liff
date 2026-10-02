@@ -15,6 +15,30 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>คำขอของฉัน</title>
+<script>
+// ตัดเวลา + ลองใหม่อัตโนมัติ สำหรับคำขออ่านข้อมูล (กันหน้าหมุนค้าง) — ไม่แตะคำขอที่เป็นการบันทึก
+(function(){
+  var F = window.fetch; if (!F || window.__hrFetchPatched) return; window.__hrFetchPatched = true;
+  var READ = /[?&]action=(emp|stats|myreq|pending|history|managerStatus)(&|$)/;
+  function once(u, o, ms){
+    var ctl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+    var oo = Object.assign({}, o || {}); if (ctl) oo.signal = ctl.signal;
+    return new Promise(function(res, rej){
+      var t = setTimeout(function(){ try{ if (ctl) ctl.abort(); }catch(e){} rej(new Error('timeout')); }, ms);
+      F.call(window, u, oo).then(function(r){
+        clearTimeout(t);
+        var ct = ''; try{ ct = String(r.headers.get('content-type') || ''); }catch(e){}
+        if (!r.ok || ct.indexOf('text/html') >= 0) rej(new Error('bad response')); else res(r);
+      }, function(e){ clearTimeout(t); rej(e); });
+    });
+  }
+  window.fetch = function(u, o){
+    var s = (u && u.url) ? u.url : String(u);
+    if ((o && o.method && String(o.method).toUpperCase() !== 'GET') || s.indexOf('script.google.com') < 0 || !READ.test(s)) return F.call(window, u, o);
+    return once(u, o, 12000).catch(function(){ return once(u, o, 15000); });
+  };
+})();
+</script>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
